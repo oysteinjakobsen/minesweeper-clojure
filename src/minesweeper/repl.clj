@@ -1,6 +1,6 @@
 (ns minesweeper.repl
   "Text-based user interface (REPL) for Minesweeper."
-  (:require [minesweeper.kjerne :refer :all]
+  (:require [minesweeper.core :refer :all]
             [minesweeper.util :refer :all]
             [clojure.string :as string]
             [clj-time.core :as time]))

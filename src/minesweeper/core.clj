@@ -1,4 +1,4 @@
-(ns minesweeper.kjerne
+(ns minesweeper.core
   "Minesweeper game core."
   (:require [minesweeper.util :refer :all])
   (:require [clj-time.core :as time]))
