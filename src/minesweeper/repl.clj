@@ -29,14 +29,12 @@
                     (format "%s (%d sekunder) %s\n\n   %s\n%s"
                             "M I N E S W E E P E R"
                             (time/in-seconds (time/interval (:start-tid brett) (time/now)))
-                            (if (spillet-er-slutt brett)
-                              (if (= (:status brett) 'tapt)
-                                "Du tapte dessverre :("
-                                "GRATULERER!!!")
-                              "")
-                            (reduce str
-                                    (for [k (range-1 bredde)] 
-                                      (format "  %s " (tall-til-streng k))))
+                            (case (spillet-er-slutt brett)
+                              tapt "Du tapte dessverre :("
+                              vunnet "GRATULERER!!!"
+                              nil "")
+                            (reduce str (for [k (range-1 bredde)] 
+                                          (format "  %s " (tall-til-streng k))))
                             (tegn-linje bredde)))
         tegn-rad (fn [brett rad]
                    (format "%2s %s|\n"

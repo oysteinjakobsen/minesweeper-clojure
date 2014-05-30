@@ -78,8 +78,7 @@
     (let [koordinat (first koordinater)
           nytt-brett (conj nytt-brett {koordinat 'markert-sjo})
           koordinater (set (into (rest koordinater) 
-                                 (if (> (antall-nabo-miner koordinat brett) 0)
-                                   nil
+                                 (if (zero? (antall-nabo-miner koordinat brett))
                                    (filter #(nil? (% nytt-brett))
                                            (finn-nabo-koordinater koordinat brett)))))]
       (if (empty? koordinater)
@@ -104,9 +103,9 @@
   {})
 
 (defn spillet-er-slutt
-  "Sjekker om spillet er slutt, enten tapt eller vunnet."
+  "Sjekker om spillet er slutt og returnerer enten 'tapt, 'vunnet eller nil (ikke slutt)."
   [brett]
-  (not (nil? (some #{(:status brett)} '(tapt vunnet)))))
+  (some #{(:status brett)} '(tapt vunnet)))
 
 (def handlinger {:klarer {:mine boooom, :sjo klarer-nabofelter, :feilmarkert-mine klarer-nabofelter}
                  :flagg {:mine flagg-mine, :sjo feilmarker-mine}})
