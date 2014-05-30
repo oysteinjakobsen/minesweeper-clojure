@@ -16,7 +16,7 @@
 (defn number-of-adjacent-mines
   "Returns the number of adjacent mines for a given coordinate."
   [coordinate board]
-  (count (filter #(some #{%} '(mine flagged-mine disclosed-mine))
+  (count (filter #(some #{%} '(mine flagged-mine disclosed-mine exploded))
                  (map #(% board)
                       (find-adjacent-coordinates coordinate board)))))
 
@@ -68,7 +68,7 @@
 (defn boooom
   "Game over..."
   [board coordinate]
-  {:board-state 'lost})
+  {coordinate 'exploded, :board-state 'lost})
 
 (defn explore-square
   "Explores the given sea square and recursively explores adjacent squares. Board updates are returned."
@@ -97,10 +97,7 @@
   [board coordinate]
   {coordinate 'wrongly-flagged-mine})
 
-(defn no-op
-  "Do nothing..."
-  [board coordinate]
-  {})
+(defn no-op "Do nothing..." [& ignored] {})
 
 (defn game-is-over
   "Checks if the game is over and returns 'lost, 'won or nil (meaning game is still in progress)."

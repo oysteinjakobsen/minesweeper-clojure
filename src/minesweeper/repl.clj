@@ -14,7 +14,8 @@
     explored-sea (let [number-of-adjacent-mines (number-of-adjacent-mines coordinate board)]
                    (if (zero? number-of-adjacent-mines) "." (str number-of-adjacent-mines)))
     disclosed-mine "M"
-    wrongly-disclosed-mine "X"))
+    wrongly-disclosed-mine "X"
+    exploded "*"))
 
 (defn draw-board
   "Returns a string representation of the given board."
@@ -27,12 +28,12 @@
                                     (repeat width "+---"))))
         draw-header (fn [width]
                       (format "%s (%d secs) %s\n\n   %s\n%s"
-                              "M I N E S W E E P E R"
-                              (time/in-seconds (time/interval (:start-time board) (time/now)))
-                              (case (game-is-over board)
-                                lost "Sorry, you blew yourself to smithereens :("
-                                won "CONGRATS!!!"
-                                nil "")
+                             "M I N E S W E E P E R"
+                             (time/in-seconds (time/interval (:start-time board) (time/now)))
+                             (case (game-is-over board)
+                               lost "Sorry, you blew yourself to smithereens :("
+                               won "CONGRATS!!!"
+                               nil "")
                               (reduce str (for [c (range-1 width)] 
                                             (format "  %s " (number-to-string c))))
                               (draw-line width)))
