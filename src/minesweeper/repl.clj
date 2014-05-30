@@ -14,7 +14,7 @@
     explored-sea (let [number-of-adjacent-mines (number-of-adjacent-mines coordinate board)]
                    (if (zero? number-of-adjacent-mines) "." (str number-of-adjacent-mines)))
     disclosed-mine "M"
-    wrongly-disclosed-mine "X"
+    disclosed-wrongly-flagged-mine "X"
     exploded "*"))
 
 (defn draw-board
@@ -28,12 +28,12 @@
                                     (repeat width "+---"))))
         draw-header (fn [width]
                       (format "%s (%d secs) %s\n\n   %s\n%s"
-                             "M I N E S W E E P E R"
-                             (time/in-seconds (time/interval (:start-time board) (time/now)))
-                             (case (game-is-over board)
-                               lost "Sorry, you blew yourself to smithereens :("
-                               won "CONGRATS!!!"
-                               nil "")
+                              "M I N E S W E E P E R"
+                              (time/in-seconds (time/interval (:start-time board) (time/now)))
+                              (case (game-is-over board)
+                                lost "Sorry, you blew yourself to smithereens :("
+                                won "CONGRATS!!!"
+                                nil "")
                               (reduce str (for [c (range-1 width)] 
                                             (format "  %s " (number-to-string c))))
                               (draw-line width)))
@@ -63,6 +63,9 @@
   (loop [board (new-board height width number-of-mines)]
     (println (draw-board board))
     (if (not (game-is-over board))
-      (let [[coordinate action] (read-move-input)]
-        (if (not (nil? coordinate))
-          (recur (do-move board coordinate action)))))))
+      (do
+        (println "Enter your move (e.g. \":B3\" or \":B3 F\")")
+        (let [[coordinate action] (read-move-input)]
+          (if (not (nil? coordinate))
+            (recur (do-move board coordinate action))))))))
+  

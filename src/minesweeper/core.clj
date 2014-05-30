@@ -20,37 +20,28 @@
                  (map #(% board)
                       (find-adjacent-coordinates coordinate board)))))
 
-(defn random-coordinate
-  "Returns a random coordinate on the given board."
-  [board]
-  (let [random-number (comp inc int rand)]
-    (index-to-coordinate
-      [(random-number (:width board))
-       (random-number (:height board))])))
-
 (defn place-mines
   "Returns a list of random coordinates for mines on the board."
   [board]
-  (loop [coordinates #{}]
-    (if (= (count coordinates) (:number-of-mines board))
-      coordinates
-      (recur (conj coordinates (random-coordinate board))))))
+  (take 
+    (:number-of-mines board) 
+    (distinct (repeatedly #(random-coordinate
+                             (:width board)
+                             (:height board))))))
 
 (defn coordinates-with-state
   "Returns the list of coordinates for squares on the board having the given state(s)."
   [board state & states]
-  (filter 
+  (filter
     #(some #{(% board)} (cons state states))
     (keys board)))
 
 (defn add-missing-board-data
   "Returns a board based on new-board, and with missing data supplied from old-board."
   [new-board old-board]
-  (into
-    new-board
-    (filter
-      #(nil? ((first %) new-board))
-      old-board)))
+  (into new-board (filter
+                    #(nil? ((first %) new-board))
+                    old-board)))
 
 (defn change-squares
   "Returns the given board but with updated square states according to the given from-to pairs."
@@ -90,27 +81,29 @@
   [board coordinate]
   (conj
     {coordinate 'flagged-mine}
-    (if (= (count (coordinates-with-state board 'mine)) 1) {:board-state 'won} nil)))
+    (if (= (count (coordinates-with-state board 'mine)) 1) {:board-state 'won})))
 
 (defn wrongly-flag-mine
   "Wrongly marks the given square as a mine. Board updates are returned."
   [board coordinate]
   {coordinate 'wrongly-flagged-mine})
 
-(defn no-op "Do nothing..." [& ignored] {})
-
 (defn game-is-over
   "Checks if the game is over and returns 'lost, 'won or nil (meaning game is still in progress)."
   [board]
   (some #{(:board-state board)} '(lost won)))
 
-(def actions {:explore {:mine boooom, :sea explore-square, :wrongly-flagged-mine explore-square}
-              :flag {:mine flag-mine, :sea wrongly-flag-mine}})
+(def actions {:explore {:mine boooom
+                        :sea explore-square
+                        :flagged-mine boooom
+                        :wrongly-flagged-mine explore-square}
+              :flag {:mine flag-mine
+                     :sea wrongly-flag-mine}})
 
 (defn do-move
   "Executes the given move on the given square. Returns a complete and updated board."
   [board coordinate action]
-  (let [action (or (get-in actions [action (keyword (coordinate board))]) no-op)
+  (let [action (or (get-in actions [action (keyword (coordinate board))]) (fn [& ignored] {}))
         new-board (add-missing-board-data (action board coordinate) board)]
     (if (game-is-over new-board)
       (change-squares new-board 'mine 'disclosed-mine 'wrongly-flagged-mine 'disclosed-wrongly-flagged-mine)

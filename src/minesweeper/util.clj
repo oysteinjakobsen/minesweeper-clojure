@@ -35,3 +35,10 @@ but with a lower limit of 1 and an upper limit of S."
   (range 
     (max (- n 1) 1)
     (min (+ n 2) (+ size 1))))
+
+(def random-number (comp inc int rand))
+
+(defn random-coordinate
+  "Returns a random coordinate on a board of given size."
+  [width height]
+  (index-to-coordinate [(random-number width) (random-number height)]))
