@@ -1,138 +1,138 @@
 (ns minesweeper.kjerne
-  "Minesweeper spillkjerne."
+  "Minesweeper game core."
   (:require [minesweeper.util :refer :all])
   (:require [clj-time.core :as time]))
 
-(defn finn-nabo-koordinater
-  "Gitt en koordinat så returneres en liste med alle nabo-koordinatene - 3, 5 eller 8 i antall."
-  [koordinat brett]
-  (let [[kolonne rad] (koordinat-til-indeks koordinat)]
+(defn find-adjacent-coordinates
+  "Given a coordinate this function returns a list of adjacent coordinates; 3, 5 or 8 in number."
+  [coordinate board]
+  (let [[column row] (coordinate-to-index coordinate)]
     (filter
-      #(not= koordinat %)
-      (for [k (nabo-range kolonne (:bredde brett)) 
-            r (nabo-range rad (:hoyde brett))]
-        (indeks-til-koordinat [k r])))))
+      #(not= coordinate %)
+      (for [c (adjacent-range column (:width board)) 
+            r (adjacent-range row (:height board))]
+        (index-to-coordinate [c r])))))
 
-(defn antall-nabo-miner
-  "Gitt en koordinat så returneres antall miner på nabo-koordinatene."
-  [koordinat brett]
-  (count (filter #(some #{%} '(mine markert-mine avslort-mine))
-                 (map #(% brett)
-                      (finn-nabo-koordinater koordinat brett)))))
+(defn number-of-adjacent-mines
+  "Returns the number of adjacent mines for a given coordinate."
+  [coordinate board]
+  (count (filter #(some #{%} '(mine flagged-mine disclosed-mine))
+                 (map #(% board)
+                      (find-adjacent-coordinates coordinate board)))))
 
-(defn tilfeldig-koordinat
-  "Returnerer en tilfeldig koordinat på det gitte brettet."
-  [brett]
-  (let [tilfeldig-tall (comp inc int rand)]
-    (indeks-til-koordinat
-      [(tilfeldig-tall (:bredde brett))
-       (tilfeldig-tall (:hoyde brett))])))
+(defn random-coordinate
+  "Returns a random coordinate on the given board."
+  [board]
+  (let [random-number (comp inc int rand)]
+    (index-to-coordinate
+      [(random-number (:width board))
+       (random-number (:height board))])))
 
-(defn legg-miner
-  "Legger ut riktig antall miner på brettet og returnerer minenes koordinater."
-  [brett]
-  (loop [koordinater #{}]
-    (if (= (count koordinater) (:antall-miner brett))
-      koordinater
-      (recur (conj koordinater (tilfeldig-koordinat brett))))))
+(defn place-mines
+  "Returns a list of random coordinates for mines on the board."
+  [board]
+  (loop [coordinates #{}]
+    (if (= (count coordinates) (:number-of-mines board))
+      coordinates
+      (recur (conj coordinates (random-coordinate board))))))
 
-(defn koordinater-med-status
-  "Returnerer en liste med de koordinater på brettet som har gitt(e) status(er)."
-  [brett status & statuser]
+(defn coordinates-with-state
+  "Returns the list of coordinates for squares on the board having the given state(s)."
+  [board state & states]
   (filter 
-    #(some #{(% brett)} (cons status statuser))
-    (keys brett)))
+    #(some #{(% board)} (cons state states))
+    (keys board)))
 
-(defn legg-til-manglende-felter
-  "Returnerer et brett som inneholder nytt-brett supplert med manglende felter fra gammelt-brett."
-  [nytt-brett gammelt-brett]
+(defn add-missing-board-data
+  "Returns a board based on new-board, and with missing data supplied from old-board."
+  [new-board old-board]
   (into
-    nytt-brett
+    new-board
     (filter
-      #(nil? ((first %) nytt-brett))
-      gammelt-brett)))
+      #(nil? ((first %) new-board))
+      old-board)))
 
-(defn endre-felt-status
-  "Returnerer gitt brett med nye felt-statuser i.h.t. til gitte fra-til-status-par."
-  [brett & fra-til]
-  (loop [nytt-brett {}
-         fra-til fra-til]
-    (let [fra (first fra-til)
-          til (second fra-til)
-          fra-til (drop 2 fra-til)
-          nytt-brett (into nytt-brett (zipmap (koordinater-med-status brett fra) (repeat til)))]
-      (if (empty? fra-til)
-        (legg-til-manglende-felter nytt-brett brett)
-        (recur nytt-brett fra-til)))))
+(defn change-squares
+  "Returns the given board but with updated square states according to the given from-to pairs."
+  [board & from-to]
+  (loop [new-board {}
+         from-to from-to]
+    (let [from (first from-to)
+          to (second from-to)
+          from-to (drop 2 from-to)
+          new-board (into new-board (zipmap (coordinates-with-state board from) (repeat to)))]
+      (if (empty? from-to)
+        (add-missing-board-data new-board board)
+        (recur new-board from-to)))))
 
 (defn boooom
-  "Spillet er tapt. Status 'tapt returneres."
-  [brett koordinat]
-  {:status 'tapt})
+  "Game over..."
+  [board coordinate]
+  {:board-state 'lost})
 
-(defn klarer-nabofelter
-  "Klarer gitt felt som minefritt og gjør rekursivt det samme med nabofeltene. Brettoppdateringer returneres."
-  [brett koordinat]
-  (loop [nytt-brett {}
-         koordinater (list koordinat)]
-    (let [koordinat (first koordinater)
-          nytt-brett (conj nytt-brett {koordinat 'markert-sjo})
-          koordinater (set (into (rest koordinater) 
-                                 (if (zero? (antall-nabo-miner koordinat brett))
-                                   (filter #(nil? (% nytt-brett))
-                                           (finn-nabo-koordinater koordinat brett)))))]
-      (if (empty? koordinater)
-        nytt-brett
-        (recur nytt-brett koordinater)))))
+(defn explore-square
+  "Explores the given sea square and recursively explores adjacent squares. Board updates are returned."
+  [board coordinate]
+  (loop [new-board {}
+         coordinates (list coordinate)]
+    (let [coordinate (first coordinates)
+          new-board (conj new-board {coordinate 'explored-sea})
+          coordinates (set (into (rest coordinates) 
+                                 (if (zero? (number-of-adjacent-mines coordinate board))
+                                   (filter #(nil? (% new-board))
+                                           (find-adjacent-coordinates coordinate board)))))]
+      (if (empty? coordinates)
+        new-board
+        (recur new-board coordinates)))))
 
-(defn flagg-mine
-  "Markerer at det er en mine på angitt koordinat, og returnerer brettoppdateringer."
-  [brett koordinat]
+(defn flag-mine
+  "Marks the given square as a mine. Board updates are returned."
+  [board coordinate]
   (conj
-    {koordinat 'markert-mine}
-    (if (= (count (koordinater-med-status brett 'mine)) 1) {:status 'vunnet} nil)))
+    {coordinate 'flagged-mine}
+    (if (= (count (coordinates-with-state board 'mine)) 1) {:board-state 'won} nil)))
 
-(defn feilmarker-mine
-  "Markerer at det er en feilmarkert mine på angitte koordinater, og returnerer brettoppdateringer."
-  [brett koordinat]
-  {koordinat 'feilmarkert-mine})
+(defn wrongly-flag-mine
+  "Wrongly marks the given square as a mine. Board updates are returned."
+  [board coordinate]
+  {coordinate 'wrongly-flagged-mine})
 
-(defn gjor-ingenting
-  "Gjør ingenting og returnerer gitte brettoppdateringer uendret."
-  [brett koordinat]
+(defn no-op
+  "Do nothing..."
+  [board coordinate]
   {})
 
-(defn spillet-er-slutt
-  "Sjekker om spillet er slutt og returnerer enten 'tapt, 'vunnet eller nil (ikke slutt)."
-  [brett]
-  (some #{(:status brett)} '(tapt vunnet)))
+(defn game-is-over
+  "Checks if the game is over and returns 'lost, 'won or nil (meaning game is still in progress)."
+  [board]
+  (some #{(:board-state board)} '(lost won)))
 
-(def handlinger {:klarer {:mine boooom, :sjo klarer-nabofelter, :feilmarkert-mine klarer-nabofelter}
-                 :flagg {:mine flagg-mine, :sjo feilmarker-mine}})
+(def actions {:explore {:mine boooom, :sea explore-square, :wrongly-flagged-mine explore-square}
+              :flag {:mine flag-mine, :sea wrongly-flag-mine}})
 
-(defn utfor-handling
-  "Utfører et trekk (gitt handling på gitt koordinat) og returnerer nytt og komplett spillbrett med status."
-  [brett koordinat handling]
-  (let [aksjon (or (get-in handlinger [handling (keyword (koordinat brett))]) gjor-ingenting)
-        nytt-brett (legg-til-manglende-felter (aksjon brett koordinat) brett)]
-    (if (spillet-er-slutt nytt-brett)
-      (endre-felt-status nytt-brett 'mine 'avslort-mine 'feilmarkert-mine 'avslort-feilmarkert-mine)
-      nytt-brett)))
+(defn do-move
+  "Executes the given move on the given square. Returns a complete and updated board."
+  [board coordinate action]
+  (let [action (or (get-in actions [action (keyword (coordinate board))]) no-op)
+        new-board (add-missing-board-data (action board coordinate) board)]
+    (if (game-is-over new-board)
+      (change-squares new-board 'mine 'disclosed-mine 'wrongly-flagged-mine 'disclosed-wrongly-flagged-mine)
+      new-board)))
 
-(defn nytt-brett
-  "Lager og returnerer et nytt brett med angitt bredde, høyde og antall miner.
-Brettet begrenses i størrelse til 26 x 50 felter, og maksimalt halvparten av feltene minelegges."
-  [bredde hoyde antall-miner]
-  (let [bredde (min bredde 26)
-        hoyde (min hoyde 50)
-        antall-miner (min antall-miner (int (/ (* bredde hoyde) 2)))
-        tomt-brett {:bredde bredde, :hoyde hoyde, :antall-miner antall-miner :start-tid (time/now)}
-        mine-koordinater (legg-miner tomt-brett)
-        felt-verdi (fn [koordinat mine-koordinater] (if (some #{koordinat} mine-koordinater) 'mine 'sjo))]
+(defn new-board
+  "Creates a new board with given size and number of mines. Size is limited to 26 x 50,
+ and maximum 50% of the squares will have mines."
+  [width height number-of-mines]
+  (let [width (min width 26)
+        height (min height 50)
+        number-of-mines (min number-of-mines (int (/ (* width height) 2)))
+        empty-board {:width width, :height height, :number-of-mines number-of-mines :start-time (time/now)}
+        mine-coordinates (place-mines empty-board)
+        square-state (fn [coordinate mine-coordinates] (if (some #{coordinate} mine-coordinates) 'mine 'sea))]
     (into
-      tomt-brett
-      (for [k (range-1 bredde)
-            r (range-1 hoyde)]
-        (let [koordinat (indeks-til-koordinat [k r])
-              verdi (felt-verdi koordinat mine-koordinater)]
-          {koordinat verdi})))))
+      empty-board
+      (for [c (range-1 width)
+            r (range-1 height)]
+        (let [coordinate (index-to-coordinate [c r])
+              state (square-state coordinate mine-coordinates)]
+          {coordinate state})))))

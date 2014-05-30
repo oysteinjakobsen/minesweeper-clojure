@@ -1,67 +1,67 @@
 (ns minesweeper.repl
-  "Tekstbasert grensesnitt (repl) for å spille Minesweeper."
+  "Text-based user interface (REPL) for Minesweeper."
   (:require [minesweeper.kjerne :refer :all]
             [minesweeper.util :refer :all]
             [clojure.string :as string]
             [clj-time.core :as time]))
 
-(defn tegn-felt
-  "Beregner og returnerer tegnet som skal brukes for uttegning av gitt koordinat på brettet."
-  [brett koordinat]
-  (case (koordinat brett)
-    (sjo mine) " "
-    (markert-mine feilmarkert-mine) "F"
-    markert-sjo (let [antall-nabo-miner (antall-nabo-miner koordinat brett)]
-                  (if (zero? antall-nabo-miner) "." (str antall-nabo-miner)))
-    avslort-mine "M"
-    avslort-feilmarkert-mine "X"))
+(defn draw-square
+  "Returns the character that represents the given square on the board."
+  [board coordinate]
+  (case (coordinate board)
+    (sea mine) " "
+    (flagged-mine wrongly-flagged-mine) "F"
+    explored-sea (let [number-of-adjacent-mines (number-of-adjacent-mines coordinate board)]
+                   (if (zero? number-of-adjacent-mines) "." (str number-of-adjacent-mines)))
+    disclosed-mine "M"
+    wrongly-disclosed-mine "X"))
 
-(defn tegn-brett
-  "Tegner opp angitt brett som tekst."
-  [brett]
-  (let [bredde (:bredde brett)
-        hoyde (:hoyde brett)
-        tegn-linje (fn [bredde]
-                     (format "   %s+\n" 
-                             (reduce str 
-                                     (repeat bredde "+---"))))
-        tegn-topp (fn [bredde]
-                    (format "%s (%d sekunder) %s\n\n   %s\n%s"
-                            "M I N E S W E E P E R"
-                            (time/in-seconds (time/interval (:start-tid brett) (time/now)))
-                            (case (spillet-er-slutt brett)
-                              tapt "Du tapte dessverre :("
-                              vunnet "GRATULERER!!!"
-                              nil "")
-                            (reduce str (for [k (range-1 bredde)] 
-                                          (format "  %s " (tall-til-streng k))))
-                            (tegn-linje bredde)))
-        tegn-rad (fn [brett rad]
+(defn draw-board
+  "Returns a string representation of the given board."
+  [board]
+  (let [width (:width board)
+        height (:height board)
+        draw-line (fn [width]
+                    (format "   %s+\n" 
+                            (reduce str 
+                                    (repeat width "+---"))))
+        draw-header (fn [width]
+                      (format "%s (%d secs) %s\n\n   %s\n%s"
+                              "M I N E S W E E P E R"
+                              (time/in-seconds (time/interval (:start-time board) (time/now)))
+                              (case (game-is-over board)
+                                lost "Sorry, you blew yourself to smithereens :("
+                                won "CONGRATS!!!"
+                                nil "")
+                              (reduce str (for [c (range-1 width)] 
+                                            (format "  %s " (number-to-string c))))
+                              (draw-line width)))
+        draw-row (fn [board row]
                    (format "%2s %s|\n"
-                           rad
+                           row
                            (reduce str 
-                                   (for [k (range-1 bredde)] 
-                                     (format "| %s " (tegn-felt brett (indeks-til-koordinat [k rad])))))))]
+                                   (for [column (range-1 width)] 
+                                     (format "| %s " (draw-square board (index-to-coordinate [column row])))))))]
     (reduce str
-            (tegn-topp bredde)
-            (for [r (range-1 hoyde)]
+            (draw-header width)
+            (for [row (range-1 height)]
               (str
-                (tegn-rad brett r)
-                (tegn-linje bredde))))))
+                (draw-row board row)
+                (draw-line width))))))
 
-(defn les-trekk
-  "Leser et trekk på formen [koordinat handling*]."
+(defn read-move-input
+  "Reads a new move from the terminal and returns it on the format [coordinate action*]."
   []
-  (let [[koordinat handling] (string/split (string/upper-case (read-line)) (re-pattern " "))]
-    [(if (empty? koordinat) nil (keyword koordinat))
-     (get {"F" :flagg, "K" :klarer} (or handling "K"))]))
+  (let [[coordinate action] (string/split (string/upper-case (read-line)) (re-pattern " "))]
+    [(if (empty? coordinate) nil (keyword coordinate))
+     (get {"F" :flag, "E" :explore} (or action "E"))]))
 
-(defn spill
-  "REPL for å spille. Brettets størrelse og antall miner angis."
-  [hoyde bredde antall-miner]
-  (loop [brett (nytt-brett hoyde bredde antall-miner)]
-    (println (tegn-brett brett))
-    (if (not (spillet-er-slutt brett))
-      (let [[koordinat handling] (les-trekk)]
-        (if (not (nil? koordinat))
-          (recur (utfor-handling brett koordinat handling)))))))
+(defn play
+  "Starts a new game with given board size and number of mines."
+  [height width number-of-mines]
+  (loop [board (new-board height width number-of-mines)]
+    (println (draw-board board))
+    (if (not (game-is-over board))
+      (let [[coordinate action] (read-move-input)]
+        (if (not (nil? coordinate))
+          (recur (do-move board coordinate action)))))))

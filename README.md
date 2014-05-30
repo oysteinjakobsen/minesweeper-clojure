@@ -1,11 +1,8 @@
 # minesweeper
 
 Played with Clojure for the first time. This is an implementation of the Minesweeper game.
-The UI is text based and in a separated module.
-
-The code is in Norwegian for now, but will be translated into English soon.
+The UI is text based and in a separate module from the core game functionality.
 
 ## Usage
 
-Run the game with (repl/spill width height number-of-mines).
-
+Run the game with (repl/play width height number-of-mines).

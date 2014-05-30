@@ -1,36 +1,37 @@
 (ns minesweeper.util
-  "Samling med utility-funksjoner som brukes av spillkjernen."
+  "Collection of utility functions used by the Minesweeper game core."
   (:require [clojure.string :as string]))
 
-(defn tall-til-streng
-  "Konverterer en tallbasert indeks til en bokstavbasert indeks, f.eks. 3 til \"C\"."
-  [t]
-  (str (char (+ t 64))))
+(defn number-to-string
+  "Converts a number-based index to a string-based index, for example 3 to \"C\"."
+  [n]
+  (str (char (+ n 64))))
 
-(defn streng-til-tall
-  "Konvererter en bokstavbasert indeks til en tallbasert indeks, f.eks. \"C\" til 3."
+(defn string-to-number
+  "Converts a string-based index to a number-based index, for example \"C\" to 3."
   [s]
   (- (int (get (string/upper-case s) 0)) 64))
 
-(defn koordinat-til-indeks
-  "Gitt en koordinat så returneres indekser som [kolonne bredde]. F.eks. vil :B3 returneres som [2 3]."
-  [koordinat]
-  [(streng-til-tall (subs (name koordinat) 0 1))
-   (read-string (subs (name koordinat) 1))])
+(defn coordinate-to-index
+  "Converts the given coordinate to a vector of indices, for example :B3 to [2 3]."
+  [coordinate]
+  [(string-to-number (subs (name coordinate) 0 1))
+   (read-string (subs (name coordinate) 1))])
 
-(defn indeks-til-koordinat
-  "Gitt indekser som [kolonne bredde] så returneres koordinat. F.eks. vil [2 3] returneres som :B3."
-  [[kolonne rad]]
-  (keyword (str (tall-til-streng kolonne) rad)))
+(defn index-to-coordinate
+  "Converts the given vector of indices to a coordinate, for example [2 3] to :B3."
+  [[column row]]
+  (keyword (str (number-to-string column) row)))
 
 (defn range-1
-  "Returnerer en range f.o.m. 1 t.o.m. gitt størrelse. F.eks. vil størrelse 4 returnere (1 2 3 4)."
+  "Returns a one-based range up to and including the given limit. Given 4 as parameter will return (1 2 3 4)."
   [end]
   (range 1 (inc end)))
 
-(defn nabo-range
-  "Gitt et tall N og en brettstørrelse S så returneres en range N-1, N og N+1, men begrenset nedad til 1 og oppad til S."
-  [n storrelse] 
+(defn adjacent-range
+  "Given a number N and a board-size S this function will return a range (N-1, N og N+1),
+but with a lower limit of 1 and an upper limit of S."
+  [n size] 
   (range 
     (max (- n 1) 1)
-    (min (+ n 2) (+ storrelse 1))))
+    (min (+ n 2) (+ size 1))))
