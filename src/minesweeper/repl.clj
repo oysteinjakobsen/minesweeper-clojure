@@ -1,11 +1,11 @@
 (ns minesweeper.repl
-  "Text-based user interface (REPL) for Minesweeper."
+  "Simple text-based user interface (REPL) for the Minesweeper game."
   (:require [minesweeper.core :refer :all]
             [minesweeper.util :refer :all]
             [clojure.string :as string]
             [clj-time.core :as time]))
 
-(defn draw-square
+(defn square-as-string
   "Returns the character that represents the given square on the board."
   [board coordinate]
   (case (coordinate board)
@@ -17,55 +17,59 @@
     disclosed-wrongly-flagged-mine "X"
     exploded "*"))
 
-(defn draw-board
+(defn board-as-string
   "Returns a string representation of the given board."
   [board]
   (let [width (:width board)
         height (:height board)
-        draw-line (fn [width]
-                    (format "   %s+\n" 
-                            (reduce str 
-                                    (repeat width "+---"))))
-        draw-header (fn [width]
-                      (format "%s (%d secs) %s\n\n   %s\n%s"
-                              "M I N E S W E E P E R"
-                              (time/in-seconds (time/interval (:start-time board) (time/now)))
-                              (case (game-is-over board)
-                                lost "Sorry, you blew yourself to smithereens :("
-                                won "CONGRATS!!!"
-                                nil "")
-                              (reduce str (for [c (range-1 width)] 
-                                            (format "  %s " (number-to-string c))))
-                              (draw-line width)))
-        draw-row (fn [board row]
-                   (format "%2s %s|\n"
-                           row
-                           (reduce str 
-                                   (for [column (range-1 width)] 
-                                     (format "| %s " (draw-square board (index-to-coordinate [column row])))))))]
+        line-as-string (fn [width]
+                         (format "   %s+\n" 
+                                 (reduce str 
+                                         (repeat width "+---"))))
+        header-as-string (fn [width]
+                           (format "%s (%d secs) %s\n\n   %s\n%s"
+                                   "M I N E S W E E P E R"
+                                   (time/in-seconds (time/interval (:start-time board) (time/now)))
+                                   (case (game-is-over board)
+                                     lost "Sorry, you blew yourself to smithereens :("
+                                     won "CONGRATS!!!"
+                                     nil "")
+                                   (reduce str (for [c (range-1 width)] 
+                                                 (format "  %s " (number-to-string c))))
+                                   (line-as-string width)))
+        row-as-string (fn [board row]
+                        (format 
+                          "%2s %s|\n"
+                          row
+                          (reduce 
+                            str 
+                            (for [column (range-1 width)] 
+                              (format "| %s " (square-as-string board (index-to-coordinate [column row])))))))]
     (reduce str
-            (draw-header width)
+            (header-as-string width)
             (for [row (range-1 height)]
               (str
-                (draw-row board row)
-                (draw-line width))))))
+                (row-as-string board row)
+                (line-as-string width))))))
 
-(defn read-move-input
-  "Reads a new move from the terminal and returns it on the format [coordinate action*]."
+(defn read-move-from-input
+  "Reads a new move from the terminal. The (case insensitive) input is a coordinate (for example 'B3'), 
+optionally followed by an action, either \"F\" (flag a mine) or \"E\" (explore, which is default).
+The function returns the move on the format [coordinate action] where action is 
+either :flag (a mine) or :explore (hopefully just sea)."
   []
   (let [[coordinate action] (string/split (string/upper-case (read-line)) (re-pattern " "))]
     [(if (empty? coordinate) nil (keyword coordinate))
      (get {"F" :flag, "E" :explore} (or action "E"))]))
 
 (defn play
-  "Starts a new game with given board size and number of mines."
+  "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminat."
   [height width number-of-mines]
   (loop [board (new-board height width number-of-mines)]
-    (println (draw-board board))
+    (println (board-as-string board))
     (if (not (game-is-over board))
       (do
-        (println "Enter your move (e.g. \":B3\" or \":B3 F\")")
-        (let [[coordinate action] (read-move-input)]
+        (println "Enter your move (e.g. \"B3\" or \"b3 f\")")
+        (let [[coordinate action] (read-move-from-input)]
           (if (not (nil? coordinate))
             (recur (do-move board coordinate action))))))))
-  
