@@ -1,5 +1,6 @@
 (ns minesweeper.repl
   "Simple text-based user interface (REPL) for the Minesweeper game."
+  (:gen-class)
   (:require [minesweeper.core :refer :all]
             [minesweeper.util :refer :all]
             [clojure.string :as string]
@@ -64,8 +65,8 @@ either :flag (a mine) or :explore (hopefully just sea)."
 
 (defn play
   "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminat."
-  [height width number-of-mines]
-  (loop [board (new-board height width number-of-mines)]
+  [width height number-of-mines]
+  (loop [board (new-board width height number-of-mines)]
     (println (board-as-string board))
     (if-not (game-over? board)
       (do
@@ -73,3 +74,8 @@ either :flag (a mine) or :explore (hopefully just sea)."
         (let [[coordinate action] (read-move-from-input)]
           (if (not (nil? coordinate))
             (recur (do-move board coordinate action))))))))
+
+(defn -main
+  "Runs Minesweeper from the command line. Board width, height, and number of mines must be given as arguments."
+  [& args]
+  (apply play (map read-string args)))
