@@ -59,5 +59,5 @@ but with a lower limit of 1 and an upper limit of S."
 (defn board-coordinates
   "Returns a list of indices on the form ([column row]*) representing each square on a board of given size."
   [width height]
-  (map index-to-coordinate (for [col (range-1 width) row (range-1 height)]
-                             [col row])))
+  (map index-to-coordinate 
+       (for [col (range-1 width) row (range-1 height)] [col row])))

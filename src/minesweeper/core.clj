@@ -6,9 +6,8 @@
 (defn number-of-adjacent-mines
   "Returns the number of adjacent mines for a given coordinate."
   [coordinate board]
-  (count (filter #(some #{%} '(mine flagged-mine disclosed-mine exploded))
-                 (map #(% board)
-                      (adjacent-coordinates coordinate (:width board) (:height board))))))
+  (count (filter #(some #{(% board)} '(mine flagged-mine disclosed-mine exploded))
+                 (adjacent-coordinates coordinate (:width board) (:height board)))))
 
 (defn coordinates-with-state
   "Returns the list of coordinates for squares on the board having the given state(s)."
@@ -17,27 +16,15 @@
     #(some #{(% board)} (cons state states))
     (keys board)))
 
-(defn add-missing-board-data
-  "Returns a board based on new-board, and with missing data supplied from old-board."
-  [new-board old-board]
-  (into new-board (filter
-                    #(nil? ((first %) new-board))
-                    old-board)))
-
 (defn change-squares
-  "Returns the given board but with updated square states according to the given from-to pairs."
-  [board & from-to]
-  (loop [new-board {}
-         from-to from-to]
-    (let [from (first from-to)
-          to (second from-to)
-          from-to (drop 2 from-to)
-          new-board (into new-board (zipmap (coordinates-with-state board from) (repeat to)))]
-      (if (empty? from-to)
-        (add-missing-board-data new-board board)
-        (recur new-board from-to)))))
+  "Returns the given board but with updated square states according to the given list of state updates ([from to]*)."
+  [board from-to]
+  (into board (map #(zipmap 
+                      (coordinates-with-state board (first %))
+                      (repeat (second %)))
+                   from-to)))
 
-(defn game-is-over
+(defn game-over?
   "Checks if the game is over and returns 'lost, 'won or nil (meaning game is still in progress)."
   [board]
   (some #{(:board-state board)} '(lost won)))
@@ -46,18 +33,17 @@
   "Explores the given sea square and recursively explores adjacent squares. Board updates are returned."
   [board coordinate]
   (loop [new-board {}
-         coordinates (list coordinate)]
-    (let [coordinate (first coordinates)
+         coordinates-to-explore (list coordinate)]
+    (let [coordinate (first coordinates-to-explore)
           new-board (conj new-board {coordinate 'explored-sea})
-          coordinates (set
-                        (into
-                          (rest coordinates) 
-                          (if (zero? (number-of-adjacent-mines coordinate board))
-                            (filter #(nil? (% new-board))
-                                    (adjacent-coordinates coordinate (:width board) (:height board))))))]
-      (if (empty? coordinates)
+          coordinates-to-explore (into
+                                   (set (rest coordinates-to-explore)) 
+                                   (if (zero? (number-of-adjacent-mines coordinate board))
+                                     (filter #(nil? (% new-board))
+                                             (adjacent-coordinates coordinate (:width board) (:height board)))))]
+      (if (empty? coordinates-to-explore)
         new-board
-        (recur new-board coordinates)))))
+        (recur new-board coordinates-to-explore)))))
 
 (defn flag-mine
   "Marks the given square as a mine. Board updates are returned."
@@ -79,10 +65,10 @@
   "Executes the given move on the given square. Returns a complete and updated board."
   [board coordinate action]
   (let [action (or (get-in actions [action (keyword (coordinate board))]) (fn [& ignored] {}))
-        new-board (add-missing-board-data (action board coordinate) board)]
-    (if (game-is-over new-board)
+        new-board (into board (action board coordinate))]
+    (if (game-over? new-board)
       (change-squares new-board
-                      'mine 'disclosed-mine, 'wrongly-flagged-mine, 'disclosed-wrongly-flagged-mine)
+                      '([mine disclosed-mine] [wrongly-flagged-mine disclosed-wrongly-flagged-mine]))
       new-board)))
 
 (defn new-board

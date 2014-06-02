@@ -11,8 +11,8 @@
   (case (coordinate board)
     (sea mine) " "
     (flagged-mine wrongly-flagged-mine) "F"
-    explored-sea (let [number-of-adjacent-mines (number-of-adjacent-mines coordinate board)]
-                   (if (zero? number-of-adjacent-mines) "." (str number-of-adjacent-mines)))
+    explored-sea (let [number (number-of-adjacent-mines coordinate board)]
+                   (if (zero? number) "." (str number)))
     disclosed-mine "M"
     disclosed-wrongly-flagged-mine "X"
     exploded "*"))
@@ -27,10 +27,10 @@
                                  (reduce str 
                                          (repeat width "+---"))))
         header-as-string (fn [width]
-                           (format "%s (%d secs) %s\n\n   %s\n%s"
+                           (format "\n%s (%d secs) %s\n\n   %s\n%s"
                                    "M I N E S W E E P E R"
                                    (time/in-seconds (time/interval (:start-time board) (time/now)))
-                                   (case (game-is-over board)
+                                   (case (game-over? board)
                                      lost "Sorry, you blew yourself to smithereens :("
                                      won "CONGRATS!!!"
                                      nil "")
@@ -67,7 +67,7 @@ either :flag (a mine) or :explore (hopefully just sea)."
   [height width number-of-mines]
   (loop [board (new-board height width number-of-mines)]
     (println (board-as-string board))
-    (if (not (game-is-over board))
+    (if-not (game-over? board)
       (do
         (println "Enter your move (e.g. \"B3\" or \"b3 f\")")
         (let [[coordinate action] (read-move-from-input)]
