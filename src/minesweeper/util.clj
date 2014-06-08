@@ -5,12 +5,12 @@
 (defn number-to-string
   "Converts a number-based index to a string-based index, for example 3 to \"C\"."
   [n]
-  (str (char (+ n 64))))
+  (-> n (+ 64) (char) (str)))
 
 (defn string-to-number
   "Converts a string-based index to a number-based index, for example \"C\" to 3."
   [s]
-  (- (int (get (string/upper-case s) 0)) 64))
+  (-> s (string/upper-case) (get 0) (int) (- 64)))
 
 (defn coordinate-to-index
   "Converts the given coordinate to a vector of indices, for example :B3 to [2 3]."
@@ -39,25 +39,14 @@ but with a lower limit of 1 and an upper limit of S."
   "Given a coordinate this function returns a list of adjacent coordinates; 3, 5 or 8 in number."
   [coordinate width height]
   (let [[column row] (coordinate-to-index coordinate)]
-    (filter
-      #(not= coordinate %)
-      (map index-to-coordinate 
-           (for [c (adjacent-range column width) r (adjacent-range row height)] [c r])))))
-
-(def random-number (comp inc int rand))
-
-(defn random-coordinate
-  "Returns a random coordinate on a board of given size."
-  [width height]
-  (index-to-coordinate [(random-number width) (random-number height)]))
-
-(defn list-of-random-coordinates
-  "Returns a given number of random coordinates on a board of given size."
-  [width height number]
-  (take number (distinct (repeatedly #(random-coordinate width height)))))
+    (filter #(not= coordinate %)
+            (for [c (adjacent-range column width)
+                  r (adjacent-range row height)]
+              (index-to-coordinate [c r])))))
 
 (defn board-coordinates
-  "Returns a list of indices on the form ([column row]*) representing each square on a board of given size."
+  "Returns a list of coordinates representing each square on a board of given size."
   [width height]
-  (map index-to-coordinate 
-       (for [col (range-1 width) row (range-1 height)] [col row])))
+  (for [col (range-1 width) 
+        row (range-1 height)]
+    (index-to-coordinate [col row])))

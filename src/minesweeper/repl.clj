@@ -59,21 +59,20 @@ optionally followed by an action, either \"F\" (flag a mine) or \"E\" (explore, 
 The function returns the move on the format [coordinate action] where action is 
 either :flag (a mine) or :explore (hopefully just sea)."
   []
+  (println "Enter your move (e.g. \"B3\" or \"b3 f\")")
   (let [[coordinate action] (string/split (string/upper-case (read-line)) (re-pattern " "))]
     [(if (empty? coordinate) nil (keyword coordinate))
      (get {"F" :flag, "E" :explore} (or action "E"))]))
 
 (defn play
-  "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminat."
+  "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminal."
   [width height number-of-mines]
   (loop [board (new-board width height number-of-mines)]
     (println (board-as-string board))
-    (if-not (game-over? board)
-      (do
-        (println "Enter your move (e.g. \"B3\" or \"b3 f\")")
-        (let [[coordinate action] (read-move-from-input)]
-          (if (not (nil? coordinate))
-            (recur (do-move board coordinate action))))))))
+    (when-not (game-over? board)
+      (let [[coordinate action] (read-move-from-input)]
+        (when-not (nil? coordinate)
+          (recur (do-move board coordinate action)))))))
 
 (defn -main
   "Runs Minesweeper from the command line. Board width, height, and number of mines must be given as arguments."

@@ -11,10 +11,8 @@
 
 (defn coordinates-with-state
   "Returns the list of coordinates for squares on the board having the given state(s)."
-  [board state & states]
-  (filter
-    #(some #{(% board)} (cons state states))
-    (keys board)))
+  [board & states]
+  (filter #(some #{(% board)} states) (keys board)))
 
 (defn change-squares
   "Returns the given board but with updated square states according to the given list of state updates ([from to]*)."
@@ -35,10 +33,10 @@
   (loop [new-board {}
          coordinates-to-explore (list coordinate)]
     (let [coordinate (first coordinates-to-explore)
-          new-board (conj new-board {coordinate 'explored-sea})
+          new-board (merge new-board {coordinate 'explored-sea})
           coordinates-to-explore (into
                                    (set (rest coordinates-to-explore)) 
-                                   (if (zero? (number-of-adjacent-mines coordinate board))
+                                   (when (zero? (number-of-adjacent-mines coordinate board))
                                      (filter #(nil? (% new-board))
                                              (adjacent-coordinates coordinate (:width board) (:height board)))))]
       (if (empty? coordinates-to-explore)
@@ -65,7 +63,7 @@
   "Executes the given move on the given square. Returns a complete and updated board."
   [board coordinate action]
   (let [action (or (get-in actions [action (keyword (coordinate board))]) (fn [& ignored] {}))
-        new-board (into board (action board coordinate))]
+        new-board (merge board (action board coordinate))]
     (if (game-over? new-board)
       (change-squares new-board
                       '([mine disclosed-mine] [wrongly-flagged-mine disclosed-wrongly-flagged-mine]))
@@ -77,10 +75,9 @@
   [width height number-of-mines]
   (let [width (min width 26)
         height (min height 50)
-        number-of-mines (min number-of-mines (int (/ (* width height) 4)))
-        mine-coordinates (list-of-random-coordinates width height number-of-mines)]
+        number-of-mines (min number-of-mines (int (/ (* width height) 4)))]
     (into
       {:width width, :height height, :number-of-mines number-of-mines :start-time (time/now)}
-      (map (fn [coordinate]
-             {coordinate (if (some #{coordinate} mine-coordinates) 'mine 'sea)})
-           (board-coordinates width height)))))
+      (zipmap 
+        (shuffle (board-coordinates width height))
+        (concat (repeat number-of-mines 'mine) (repeat 'sea))))))
