@@ -1,6 +1,7 @@
 (ns minesweeper.util
   "Collection of utility functions used by the Minesweeper game core."
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [clj-time.core :as time]))
 
 (defn number-to-string
   "Converts a number-based index to a string-based index, for example 3 to \"C\"."
@@ -50,3 +51,8 @@ but with a lower limit of 1 and an upper limit of S."
   (for [col (range-1 width) 
         row (range-1 height)]
     (index-to-coordinate [col row])))
+
+(defn time-in-seconds
+  "Returns the number of seconds passed since the given start time."
+  [start-time]
+  (time/in-seconds (time/interval start-time (time/now))))

@@ -18,8 +18,8 @@
     disclosed-wrongly-flagged-mine "X"
     exploded "*"))
 
-(defn board-as-string
-  "Returns a string representation of the given board."
+(defn render-board
+  "Prints an ascii representation of the given board on the terminal."
   [board]
   (let [width (:width board)
         height (:height board)
@@ -30,7 +30,7 @@
         header-as-string (fn [width]
                            (format "\n%s (%d secs) %s\n\n   %s\n%s"
                                    "M I N E S W E E P E R"
-                                   (time/in-seconds (time/interval (:start-time board) (time/now)))
+                                   (time-in-seconds (:start-time board))
                                    (case (game-over? board)
                                      lost "Sorry, you blew yourself to smithereens :("
                                      won "CONGRATS!!!"
@@ -46,12 +46,12 @@
                             str 
                             (for [column (range-1 width)] 
                               (format "| %s " (square-as-string board (index-to-coordinate [column row])))))))]
-    (reduce str
-            (header-as-string width)
-            (for [row (range-1 height)]
-              (str
-                (row-as-string board row)
-                (line-as-string width))))))
+    (println (reduce str
+                     (header-as-string width)
+                     (for [row (range-1 height)]
+                       (str
+                         (row-as-string board row)
+                         (line-as-string width)))))))
 
 (defn read-move-from-input
   "Reads a new move from the terminal. The (case insensitive) input is a coordinate (for example 'B3'), 
@@ -61,18 +61,17 @@ either :flag (a mine) or :explore (hopefully just sea)."
   []
   (println "Enter your move (e.g. \"B3\" or \"b3 f\")")
   (let [[coordinate action] (string/split (string/upper-case (read-line)) (re-pattern " "))]
-    [(if (empty? coordinate) nil (keyword coordinate))
-     (get {"F" :flag, "E" :explore} (or action "E"))]))
+    (when-not (empty? coordinate)
+      [(keyword coordinate) (get {"F" :flag, "E" :explore} (or action "E"))])))
 
 (defn play
   "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminal."
   [width height number-of-mines]
   (loop [board (new-board width height number-of-mines)]
-    (println (board-as-string board))
+    (render-board board)
     (when-not (game-over? board)
-      (let [[coordinate action] (read-move-from-input)]
-        (when-not (nil? coordinate)
-          (recur (do-move board coordinate action)))))))
+      (when-let [[coordinate action] (read-move-from-input)]
+        (recur (do-move board coordinate action))))))
 
 (defn -main
   "Runs Minesweeper from the command line. Board width, height, and number of mines must be given as arguments."
