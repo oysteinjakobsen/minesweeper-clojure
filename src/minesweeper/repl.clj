@@ -3,8 +3,7 @@
   (:gen-class)
   (:require [minesweeper.core :refer :all]
             [minesweeper.util :refer :all]
-            [clojure.string :as string]
-            [clj-time.core :as time]))
+            [clojure.string :as string]))
 
 (defn square-as-string
   "Returns the character that represents the given square on the board."

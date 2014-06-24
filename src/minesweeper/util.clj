@@ -1,7 +1,7 @@
 (ns minesweeper.util
   "Collection of utility functions used by the Minesweeper game core."
   (:require [clojure.string :as string]
-            [clj-time.core :as time]))
+            [clj-time.core :as joda]))
 
 (defn number-to-string
   "Converts a number-based index to a string-based index, for example 3 to \"C\"."
@@ -55,4 +55,4 @@ but with a lower limit of 1 and an upper limit of S."
 (defn time-in-seconds
   "Returns the number of seconds passed since the given start time."
   [start-time]
-  (time/in-seconds (time/interval start-time (time/now))))
+  (joda/in-seconds (joda/interval start-time (joda/now))))
