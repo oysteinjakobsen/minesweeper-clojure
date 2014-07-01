@@ -7,12 +7,11 @@
 
 (defn square-as-string
   "Returns the character that represents the given square on the board."
-  [board coordinate]
-  (case (coordinate board)
-    (sea mine) " "
-    (flagged-mine wrongly-flagged-mine) "F"
-    explored-sea (let [number (number-of-adjacent-mines coordinate board)]
-                   (if (zero? number) "." (str number)))
+  [[coordinate state mines]]
+  (case state
+    untouched " "
+    flagged "F"
+    explored-sea (if (zero? mines) "." (str mines))
     disclosed-mine "M"
     disclosed-wrongly-flagged-mine "X"
     exploded "*"))
@@ -27,30 +26,28 @@
                                  (reduce str 
                                          (repeat width "+---"))))
         header-as-string (fn [width]
-                           (format "\n%s (%d secs) %s\n\n   %s\n%s"
+                           (format "\n%s (secs: %d, moves: %d) %s\n\n   %s\n%s"
                                    "M I N E S W E E P E R"
-                                   (time-in-seconds (:start-time board))
+                                   (:seconds board)
+                                   (:number-of-moves board)
                                    (case (game-over? board)
-                                     lost "Sorry, you blew yourself to smithereens :("
-                                     won "CONGRATS!!!"
+                                     lost "\nSorry, you blew yourself to smithereens :("
+                                     won "\nCONGRATS!!!"
                                      nil "")
                                    (reduce str (for [c (range-1 width)] 
-                                                 (format "  %s " (number-to-string c))))
+                                                 (format "  %s " (number->string c))))
                                    (line-as-string width)))
-        row-as-string (fn [board row]
+        row-as-string (fn [index row]
                         (format 
                           "%2s %s|\n"
-                          row
-                          (reduce 
-                            str 
-                            (for [column (range-1 width)] 
-                              (format "| %s " (square-as-string board (index-to-coordinate [column row])))))))]
+                          (inc index)
+                          (reduce #(str %1 (format "| %s " (square-as-string %2))) "" row)))]
     (println (reduce str
                      (header-as-string width)
-                     (for [row (range-1 height)]
-                       (str
-                         (row-as-string board row)
-                         (line-as-string width)))))))
+                     (map-indexed
+                       #(str
+                         (row-as-string %1 %2)
+                         (line-as-string width)) (:squares board))))))
 
 (defn read-move-from-input
   "Reads a new move from the terminal. The (case insensitive) input is a coordinate (for example 'B3'), 
@@ -67,10 +64,10 @@ either :flag (a mine) or :explore (hopefully just sea)."
   "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminal."
   [width height number-of-mines]
   (loop [board (new-board width height number-of-mines)]
-    (render-board board)
-    (when-not (game-over? board)
-      (when-let [[coordinate action] (read-move-from-input)]
-        (recur (do-move board coordinate action))))))
+  (render-board (restructure-board board))
+  (when-not (game-over? board)
+    (when-let [[coordinate action] (read-move-from-input)]
+      (recur (merge-boards board (do-move board coordinate action)))))))
 
 (defn -main
   "Runs Minesweeper from the command line. Board width, height, and number of mines must be given as arguments."
