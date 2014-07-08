@@ -29,7 +29,7 @@
     (should= 13 (count (filter #(= % 'mine) (vals (:squares (new-board 7 9 13)))))))
   (it
     "creates squares with sea unless there is a mine"
-    (should= (- (* 7 9) 13) (count (filter #(not= % 'mine) (vals (:squares (new-board 7 9 13)))))))
+    (should= (- (* 7 9) 13) (count (filter #(= % 'sea) (vals (:squares (new-board 7 9 13)))))))
   (it
     "stores the size and number of mines in the board"
     (let [board (new-board 7 9 13)]
@@ -160,6 +160,8 @@
                          :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
                          :A4 'sea, :B4 'mine, :C4 'sea, :D4 'sea, :E4 'sea,
                          :A5 'sea, :B5 'sea, :C5 'sea, :D5 'sea, :E5 'sea}})
+  (with partial-board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2, 
+                       :squares {:A1 'flagged-mine, :B1 'wrongly-flagged-mine, :C2 'flagged-mine}})
   (it
     "returns the board's squares as a list of row lists, each square containing state, mines, and coordinate"
     (with-redefs

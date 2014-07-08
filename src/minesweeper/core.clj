@@ -60,7 +60,7 @@
     {:squares {coordinate 'flagged-mine}}
     (if (= (count (coordinates-with-state board 'mine)) 1) {:board-state 'won})))
 
-(defn boooom 
+(defn- boooom 
   [board coordinate]
   {:squares {coordinate 'exploded}, :board-state 'lost})
 
@@ -112,7 +112,7 @@
                 (shuffle (board-coordinates width height))
                 (concat (repeat number-of-mines 'mine) (repeat 'sea)))}))
 
-(defn anonymize-square
+(defn- anonymize-square
   "Anonymizes the state so that the client don't see the mines."
   [square]
   (let [square (replace {'mine 'untouched, 'sea 'untouched, 'flagged-mine 'flagged, 'wrongly-flagged-mine 'flagged} square)]
@@ -121,6 +121,7 @@
       square)))
 
 (defn- restructure-square
+  "Returns the given square as a vector containing coordinate, state, and number-of-mines."
   [board coordinate]
   [coordinate (coordinate (:squares board)) (number-of-adjacent-mines coordinate board)])
 
@@ -129,7 +130,7 @@
   [board]
   (dissoc (assoc board 
                  :squares (partition-by #(second (coordinate->index (first %)))
-                                      (map #(anonymize-square (restructure-square board %))
+                                        (map #(anonymize-square (restructure-square board %))
                                              (board-coordinates (:width board) (:height board))))
                  :seconds (time-in-seconds (:start-time board)))
           :start-time))

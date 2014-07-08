@@ -1,9 +1,30 @@
 # Minesweeper
 
-Played with Clojure for the first time. This is an implementation of the Minesweeper game.
+I played with Clojure for the first time, which resulted in this implementation of the Minesweeper game.
 The UI is text based and in a separate module from the core game functionality.
 
 ## Usage
 
-Run the game with (minesweeper.repl/play width height number-of-mines) or from the
-command-line using the uberjar with the same arguments.
+Run from the REPL:
+
+```clojure
+(minesweeper.repl/play width height number-of-mines)
+```
+
+From Leiningen:
+
+...
+lein run 9 9 10
+...
+
+Add *-c* if you're running in a terminal supporting ansi coloring.
+
+## Tests
+
+To run Speclj tests, run 
+
+...
+lein spec -a
+...
+
+Add *-C* if you're running in a terminal _not_ supporting ansi coloring.

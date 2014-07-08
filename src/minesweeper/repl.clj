@@ -1,9 +1,13 @@
 (ns minesweeper.repl
-  "Simple text-based user interface (REPL) for the Minesweeper game."
+  "Simple text-based user interface (REPL) for the Minesweeper game. If you want to see clean and
+beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
   (:gen-class)
   (:require [minesweeper.core :refer :all]
             [minesweeper.util :refer :all]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [clansi.core :as ansi]))
+
+(def colors {1 :blue, 2 :green, 3 :red, 4 :magenta})
 
 (defn square-as-string
   "Returns the character that represents the given square on the board."
@@ -11,10 +15,10 @@
   (case state
     untouched " "
     flagged "F"
-    explored-sea (if (zero? mines) "." (str mines))
-    disclosed-mine "M"
-    disclosed-wrongly-flagged-mine "X"
-    exploded "*"))
+    explored-sea (if (zero? mines) "." (ansi/style (str mines) (get colors mines :default)))
+    disclosed-mine (ansi/style "M" :red)
+    disclosed-wrongly-flagged-mine (ansi/style "X" :red)
+    exploded (ansi/style "*" :bg-red :white)))
 
 (defn render-board
   "Prints an ascii representation of the given board on the terminal."
@@ -31,8 +35,8 @@
                                    (:seconds board)
                                    (:number-of-moves board)
                                    (case (game-over? board)
-                                     lost "\nSorry, you blew yourself to smithereens :("
-                                     won "\nCONGRATS!!!"
+                                     lost (ansi/style "\nSorry, you blew yourself to smithereens :(" :red)
+                                     won (ansi/style "\nCONGRATS!!!" :green)
                                      nil "")
                                    (reduce str (for [c (range-1 width)] 
                                                  (format "  %s " (number->string c))))
@@ -46,8 +50,8 @@
                      (header-as-string width)
                      (map-indexed
                        #(str
-                         (row-as-string %1 %2)
-                         (line-as-string width)) (:squares board))))))
+                          (row-as-string %1 %2)
+                          (line-as-string width)) (:squares board))))))
 
 (defn read-move-from-input
   "Reads a new move from the terminal. The (case insensitive) input is a coordinate (for example 'B3'), 
@@ -62,12 +66,13 @@ either :flag (a mine) or :explore (hopefully just sea)."
 
 (defn play
   "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminal."
-  [width height number-of-mines]
-  (loop [board (new-board width height number-of-mines)]
-  (render-board (restructure-board board))
-  (when-not (game-over? board)
-    (when-let [[coordinate action] (read-move-from-input)]
-      (recur (merge-boards board (do-move board coordinate action)))))))
+  [width height number-of-mines & options]
+  (binding [ansi/use-ansi (if (some #{'-c} options) true false)]
+    (loop [board (new-board width height number-of-mines)]
+      (render-board (restructure-board board))
+      (when-not (game-over? board)
+        (when-let [[coordinate action] (read-move-from-input)]
+          (recur (merge-boards board (do-move board coordinate action))))))))
 
 (defn -main
   "Runs Minesweeper from the command line. Board width, height, and number of mines must be given as arguments."
