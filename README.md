@@ -13,18 +13,18 @@ Run from the REPL:
 
 From Leiningen:
 
-...
+```
 lein run 9 9 10
-...
+```
 
-Add *-c* if you're running in a terminal supporting ansi coloring.
+Add **-c** if you're running in a terminal supporting ansi coloring.
 
 ## Tests
 
 To run Speclj tests, run 
 
-...
+```
 lein spec -a
-...
+```
 
-Add *-C* if you're running in a terminal _not_ supporting ansi coloring.
+Add **-C** if you're running in a terminal _not_ supporting ansi coloring.
