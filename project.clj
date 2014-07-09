@@ -1,4 +1,4 @@
-(defproject minesweeper "1.0.0-SNAPSHOT"
+(defproject oysteinj/minesweeper "1.0.0-SNAPSHOT"
   :description "Minesweeper game"
   :url "https://github.com/oysteinjakobsen/minesweeper-clojure"
   :license {:name "Eclipse Public License"
