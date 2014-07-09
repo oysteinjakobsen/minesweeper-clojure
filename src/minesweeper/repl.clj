@@ -16,9 +16,9 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
     untouched " "
     flagged "F"
     explored-sea (if (zero? mines) "." (ansi/style (str mines) (get colors mines :default)))
-    disclosed-mine (ansi/style "M" :red)
-    disclosed-wrongly-flagged-mine (ansi/style "X" :red)
-    exploded (ansi/style "*" :bg-red :white)))
+    disclosed-mine (ansi/style "M" :red :bright)
+    disclosed-wrongly-flagged-mine (ansi/style "X" :red :bright)
+    exploded (ansi/style "*" :red :bright)))
 
 (defn render-board
   "Prints an ascii representation of the given board on the terminal."
@@ -35,8 +35,8 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
                                    (:seconds board)
                                    (:number-of-moves board)
                                    (case (game-over? board)
-                                     lost (ansi/style "\nSorry, you blew yourself to smithereens :(" :red)
-                                     won (ansi/style "\nCONGRATS!!!" :green)
+                                     lost (ansi/style "\nSorry, you blew yourself to smithereens :(" :red :bright)
+                                     won (ansi/style "\nCONGRATS!!!" :green :bright)
                                      nil "")
                                    (reduce str (for [c (range-1 width)] 
                                                  (format "  %s " (number->string c))))
