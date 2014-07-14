@@ -6,7 +6,7 @@
 (defn mine?
   "Returns true if given state is one that represents a mine, nil otherwise"
   [state]
-  (some #(= state %) '(mine flagged-mine disclosed-mine exploded)))
+  (some #(= state %) '(mine flagged-mine disclosed-mine exploded questioned-mine)))
 
 (defn number-of-adjacent-mines
   "Returns the number of adjacent mines on the given board for a given coordinate."
@@ -21,10 +21,27 @@
 (defn change-squares
   "Returns a partial board with updated states according to the given list of state updates ([from to]*)."
   [board from-to]
-  {:squares (reduce merge {} (map #(zipmap
+  (let [squares (reduce merge {} (map #(zipmap
                                      (coordinates-with-state board (first %))
                                      (repeat (second %)))
-                                  from-to))})
+                                  from-to))]
+    (assoc {:squares squares} :updated (into (or (:updated board) {}) (keys squares)))))
+
+(defn updated-board-state
+  [board]
+  (let [number-of-flagges-mines (count (coordinates-with-state board 'flagged-mine))
+        number-of-wrongly-flagged-mines (count (coordinates-with-state board 'wrongly-flagged-mine))
+        game-is-won? (and (zero? number-of-wrongly-flagged-mines) (= number-of-flagges-mines (:number-of-mines board)))
+        game-is-lost? (not (zero? (count (coordinates-with-state board 'exploded))))]
+  (assoc board
+         :seconds (time-in-seconds (:start-time board))
+         :number-of-moves (inc (:number-of-moves board))
+         :remaining (- (:number-of-mines board) (+ number-of-flagges-mines number-of-wrongly-flagged-mines))
+         :board-state (or (when game-is-won? 'won) (when game-is-lost? 'lost) 'in-progress))))
+
+(defn filter-board
+  [board]
+  (dissoc (assoc board :squares (select-keys (:squares board) (:updated board)) :updated)))
 
 (defn game-over?
   "Checks if the game is over (returns 'lost or 'won) or still in progress (returns nil)."
@@ -53,23 +70,16 @@
         new-board
         (recur new-board coordinates-to-explore)))))
 
-(defn- flag-mine
-  "Marks the given square as a mine. Board updates are returned."
-  [board coordinate]
-  (conj
-    {:squares {coordinate 'flagged-mine}}
-    (if (= (count (coordinates-with-state board 'mine)) 1) {:board-state 'won})))
-
-(defn- boooom 
-  [board coordinate]
-  {:squares {coordinate 'exploded}, :board-state 'lost})
-
-(def actions {:explore {:mine boooom
-                        :flagged-mine boooom
+(def actions {:explore {:mine 'exploded
+                        :flagged-mine 'exploded
                         :sea explore-sea
                         :wrongly-flagged-mine explore-sea}
-              :flag {:mine flag-mine
-                     :sea (fn [board coordinate] {:squares {coordinate 'wrongly-flagged-mine}})}})
+              :flag {:mine 'flagged-mine
+                     :sea 'wrongly-flagged-mine
+                     :flagged-mine 'questioned-mine
+                     :wrongly-flagged-mine 'questioned-sea
+                     :questioned-sea 'sea
+                     :questioned-mine 'mine}})
 
 (defn valid-move?
   "A first move to a square with mine or adjacent mines is not valid. All other moves are valid."
@@ -81,7 +91,10 @@
 (defn disclosed-board
   [board]
   (change-squares board
-                  '([mine disclosed-mine] [wrongly-flagged-mine disclosed-wrongly-flagged-mine])))
+                  '([mine disclosed-mine]
+                     [wrongly-flagged-mine disclosed-wrongly-flagged-mine]
+                     [questioned-sea sea]
+                     [questioned-mine disclosed-mine])))
 
 (declare new-board)
 
@@ -94,10 +107,11 @@
     (let [board (new-board (:width board) (:height board) (:number-of-mines board))]
       (merge-boards board (do-move board coordinate action)))
     (let [action (or (get-in actions [action (keyword (coordinate (:squares board)))]) no-op)
-          new-board (into {:width (:width board) :height (:height board) :number-of-moves (inc (:number-of-moves board))}
-                          (action board coordinate))]
+          action-results (if (fn? action) (action board coordinate) {:squares {coordinate action}})
+          updated-squares (keys (:squares action-results))
+          new-board (assoc (updated-board-state (merge-boards board action-results)) :updated updated-squares)]
       (if (game-over? new-board)
-        (merge-boards (disclosed-board board) new-board)
+        (merge-boards new-board (disclosed-board new-board))
         new-board))))
 
 (defn new-board
@@ -107,7 +121,7 @@
   (let [width (min width 26)
         height (min height 50)
         number-of-mines (min number-of-mines (int (/ (* width height) 4)))]
-    {:width width, :height height, :number-of-mines number-of-mines :start-time (time/now) :number-of-moves 0
+    {:width width, :height height, :number-of-mines number-of-mines, :remaining number-of-mines, :start-time (time/now), :number-of-moves 0
      :squares (zipmap
                 (shuffle (board-coordinates width height))
                 (concat (repeat number-of-mines 'mine) (repeat 'sea)))}))
@@ -115,7 +129,7 @@
 (defn- anonymize-square
   "Anonymizes the state so that the client don't see the mines."
   [square]
-  (let [square (replace {'mine 'untouched, 'sea 'untouched, 'flagged-mine 'flagged, 'wrongly-flagged-mine 'flagged} square)]
+  (let [square (replace {'mine 'untouched, 'sea 'untouched, 'flagged-mine 'flagged, 'wrongly-flagged-mine 'flagged 'questioned-mine 'questioned 'questioned-sea 'questioned} square)]
     (if (= (second square) 'untouched)
       (assoc square 2 0)
       square)))

@@ -15,6 +15,7 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
   (case state
     untouched " "
     flagged "F"
+    questioned "?"
     explored-sea (if (zero? mines) "." (ansi/style (str mines) (get colors mines :default)))
     disclosed-mine (ansi/style "M" :red :bright)
     disclosed-wrongly-flagged-mine (ansi/style "X" :red :bright)
@@ -30,10 +31,11 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
                                  (reduce str 
                                          (repeat width "+---"))))
         header-as-string (fn [width]
-                           (format "\n%s (secs: %d, moves: %d) %s\n\n   %s\n%s"
+                           (format "\n%s (secs: %d, moves: %d, remaining: %d) %s\n\n   %s\n%s"
                                    "M I N E S W E E P E R"
                                    (:seconds board)
                                    (:number-of-moves board)
+                                   (:remaining board)
                                    (case (game-over? board)
                                      lost (ansi/style "\nSorry, you blew yourself to smithereens :(" :red :bright)
                                      won (ansi/style "\nCONGRATS!!!" :green :bright)
@@ -72,7 +74,7 @@ either :flag (a mine) or :explore (hopefully just sea)."
       (render-board (restructure-board board))
       (when-not (game-over? board)
         (when-let [[coordinate action] (read-move-from-input)]
-          (recur (merge-boards board (do-move board coordinate action))))))))
+          (recur (do-move board coordinate action)))))))
 
 (defn -main
   "Runs Minesweeper from the command line. Board width, height, and number of mines must be given as arguments."
