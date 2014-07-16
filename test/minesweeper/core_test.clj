@@ -79,37 +79,41 @@
 
 (describe
   "updated-board-state"
-  (with board {:number-of-mines 2, :number-of-moves 3}) 
+  (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 3, :seconds 12}) 
   (with squares {:A1 'flagged-mine, :B1 'sea, :C1 'sea, :D1 'sea, :E1 'sea,
                  :A2 'sea, :B2 'sea, :C2 'sea, :D2 'sea, :E2 'sea,
                  :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
                  :A4 'sea, :B4 'sea, :C4 'sea, :D4 'mine, :E4 'sea,
                  :A5 'sea, :B5 'sea, :C5 'sea, :D5 'sea, :E5 'sea})
   (it
-    "returns board-state 'lost if a mine has exploded"
-    (let [board (assoc @board :squares (assoc @squares :D4 'exploded))]
-      (should= 'lost (:board-state (updated-board-state board)))))
+    "returns game-state 'lost if a mine has exploded"
+    (let [board (assoc @board, :squares (assoc @squares, :D4 'exploded))]
+      (should= 'lost (:game-state (updated-board-state board)))))
   (it
-    "returns board-state 'won if all mines are flagged and nothing else is flagged"
-    (let [board (assoc @board :squares (assoc @squares :A1 'flagged-mine :D4 'flagged-mine))]
-      (should= 'won (:board-state (updated-board-state board)))))
+    "returns game-state 'won and calculates points if all mines are flagged and nothing else is flagged"
+    (with-redefs
+      [time-in-seconds (fn [& _] 42)]
+      (let [board (assoc @board :squares (assoc @squares, :A1 'flagged-mine, :D4 'flagged-mine))
+            results (updated-board-state board)]
+        (should= 'won (:game-state results))
+        (should= 297 (:points results)))))
   (it
-    "returns board-state 'in-progress if game is neither 'lost nor 'won"
-    (let [board (assoc @board :squares @squares)]
-      (should= 'in-progress (:board-state (updated-board-state board)))))
+    "returns no game-state if game is neither 'lost nor 'won"
+    (let [board (assoc @board, :squares @squares)]
+      (should-not (:game-state (updated-board-state board)))))
   (it
     "returns remaining as number of mines minus number of flagged squares"
-    (let [board (assoc @board :squares (assoc @squares :A5 'wrongly-flagged-mine :D4 'flagged-mine))]
+    (let [board (assoc @board :squares (assoc @squares, :A5 'wrongly-flagged-mine, :D4 'flagged-mine))]
       (should= -1 (:remaining (updated-board-state board)))))
   (it
     "increments number-of-moves"
-    (let [board (assoc @board :squares @squares)]
+    (let [board (assoc @board, :squares @squares)]
       (should= 4 (:number-of-moves (updated-board-state board)))))
   (it
     "returns seconds passed since the start of the game"
     (with-redefs
       [time-in-seconds (fn [& _] 42)]
-      (let [board (assoc @board :squares @squares)]
+      (let [board (assoc @board, :squares @squares)]
         (should= 42 (:seconds (updated-board-state board)))))))
 
 (describe
@@ -117,11 +121,11 @@
   (with board (new-board 4 4 5))
   (it
     "returns true if the board-state is 'won"
-    (let [board (assoc @board :board-state 'won)]
+    (let [board (assoc @board, :game-state 'won)]
       (should (game-over? board))))
   (it
     "returns true if the board-state is 'lost"
-    (let [board (assoc @board :board-state 'lost)]
+    (let [board (assoc @board, :game-state 'lost)]
       (should (game-over? board))))
   (it
     "otherwise returns false"
@@ -133,9 +137,9 @@
                         :squares {:A1 'sea, :B1 'sea,
                                   :A2 'sea, :B2 'mine,
                                   :A3 'sea, :B3 'sea}})
-  (with new-partial-board {:number-of-moves 1, :board-state 'won,
+  (with new-partial-board {:number-of-moves 1, :game-state 'won,
                            :squares {:A3 'mine, :B3 'flagged-mine}})
-  (with merged-board {:width 5, :height 5, :number-of-moves 1, :board-state 'won, 
+  (with merged-board {:width 5, :height 5, :number-of-moves 1, :game-state 'won, 
                       :squares {:A1 'sea, :B1 'sea,
                                 :A2 'sea, :B2 'mine,
                                 :A3 'mine, :B3 'flagged-mine}})
@@ -145,7 +149,7 @@
 
 (describe
   "do-move"
-  (with board {:width 5, :height 5, :number-of-mines 5, :number-of-moves 2, 
+  (with board {:width 5, :height 5, :number-of-mines 5, :number-of-moves 2, :seconds 12
                :squares {:A1 'flagged-mine, :B1 'wrongly-flagged-mine, :C1 'mine, :D1 'sea, :E1 'sea,
                          :A2 'mine, :B2 'sea, :C2 'mine, :D2 'questioned-sea, :E2 'sea,
                          :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
@@ -174,7 +178,7 @@
       (should= '(:A1) (:updated results)))) 
   (it
     "returns a board with one updated square with state 'mine if move is to flag a questioned mine"
-    (let [board (assoc @board :squares (assoc (:squares @board) :A1 'questioned-mine))
+    (let [board (assoc @board, :squares (assoc (:squares @board) :A1 'questioned-mine))
           results (do-move board :A1 :flag)]
       (should= 'mine (:A1 (:squares results)))
       (should= '(:A1) (:updated results)))) 
@@ -185,23 +189,25 @@
       (should= '(:B1) (:updated results)))) 
   (it
     "returns a board with one updated square with state 'sea if move is to flag questioned sea"
-    (let [board (assoc @board :squares (assoc (:squares @board) :B1 'questioned-sea))
+    (let [board (assoc @board, :squares (assoc (:squares @board) :B1 'questioned-sea))
           results (do-move board :B1 :flag)]
       (should= 'sea (:B1 (:squares results)))
       (should= '(:B1) (:updated results))))
   (it
     "keeps game in progress if last mine was flagged but there are still wrongly flagged mines left"
-    (let [board (assoc @board :squares (assoc (:squares @board) :C1 'flagged-mine :A2 'flagged-mine :C2 'flagged-mine :D2 'sea))
+    (let [board (assoc @board :squares, (assoc (:squares @board), :C1 'flagged-mine, :A2 'flagged-mine, :C2 'flagged-mine, :D2 'sea))
           results (do-move board :B4 :flag)]
       (should= 'flagged-mine (:B4 (:squares results)))
-      (should= 'in-progress (:board-state results))))
+      (should-not (:game-state results))))
   (it
     "returns a board with board state 'won if last mine was flagged and there are no wrongly flagged mines"
-    (let [board (assoc @board :squares (assoc (:squares @board) :B1 'sea, :C1 'flagged-mine, :A2 'flagged-mine, :C2 'flagged-mine))
-          results (do-move board :B4 :flag)]
-      (should= 'flagged-mine (:B4 (:squares results)))
-      (should= #{:B4 :D2} (set (:updated results)))
-      (should= 'won (:board-state results))))
+    (with-redefs
+      [time-in-seconds (fn [& _] 42)]
+      (let [board (assoc @board, :squares (assoc (:squares @board), :B1 'sea, :C1 'flagged-mine, :A2 'flagged-mine, :C2 'flagged-mine))
+            results (do-move board :B4 :flag)]
+        (should= 'flagged-mine (:B4 (:squares results)))
+        (should= #{:B4 :D2} (set (:updated results)))
+        (should= 'won (:game-state results)))))
   (it
     "returns a board with one updated square with state 'wrongly-flagged-mine if move is to flag sea as mine"
     (let [results (do-move @board :C4 :flag)]
@@ -210,13 +216,13 @@
   (it
     "returns a disclosed board with board state 'lost if move is to explore a mine"
     (let [results (do-move @board :A2 :explore)]
-      (should= 'lost (:board-state results))
+      (should= 'lost (:game-state results))
       (should= 'exploded (:A2 (:squares results)))
       (should= #{:B1 :C1 :A2 :C2 :D2 :B4} (set (:updated results)))
       (should= {:B1 'disclosed-wrongly-flagged-mine, :C1 'disclosed-mine
                 :A2 'exploded, :C2 'disclosed-mine, :D2 'sea
                 :B4 'disclosed-mine}
-             (select-keys (:squares results) [:B1 :C1 :A2 :C2 :D2 :B4]))))
+               (select-keys (:squares results) [:B1 :C1 :A2 :C2 :D2 :B4]))))
   (it
     "creates a new board if first move is to explore a square with a mine or adjacent mines"
     (let [board (assoc @board :number-of-moves 0)]

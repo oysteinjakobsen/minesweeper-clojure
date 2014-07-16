@@ -22,31 +22,46 @@
   "Returns a partial board with updated states according to the given list of state updates ([from to]*)."
   [board from-to]
   (let [squares (reduce merge {} (map #(zipmap
-                                     (coordinates-with-state board (first %))
-                                     (repeat (second %)))
-                                  from-to))]
+                                         (coordinates-with-state board (first %))
+                                         (repeat (second %)))
+                                      from-to))]
     (assoc {:squares squares} :updated (into (or (:updated board) {}) (keys squares)))))
 
 (defn updated-board-state
+  "Updates the board with state, i.e. seconds passed, number of moves, remaining mines, game-state, and points."
   [board]
   (let [number-of-flagges-mines (count (coordinates-with-state board 'flagged-mine))
         number-of-wrongly-flagged-mines (count (coordinates-with-state board 'wrongly-flagged-mine))
         game-is-won? (and (zero? number-of-wrongly-flagged-mines) (= number-of-flagges-mines (:number-of-mines board)))
-        game-is-lost? (not (zero? (count (coordinates-with-state board 'exploded))))]
-  (assoc board
-         :seconds (time-in-seconds (:start-time board))
-         :number-of-moves (inc (:number-of-moves board))
-         :remaining (- (:number-of-mines board) (+ number-of-flagges-mines number-of-wrongly-flagged-mines))
-         :board-state (or (when game-is-won? 'won) (when game-is-lost? 'lost) 'in-progress))))
+        game-is-lost? (not (zero? (count (coordinates-with-state board 'exploded))))
+        game-is-over? (or game-is-won? game-is-lost?)
+        seconds (time-in-seconds (:start-time board))
+        number-of-moves (inc (:number-of-moves board))]
+    (conj board
+          [:number-of-moves number-of-moves]
+          [:remaining (- (:number-of-mines board) (+ number-of-flagges-mines number-of-wrongly-flagged-mines))]
+          [:seconds seconds]
+          (when (= number-of-moves 1) [:start-time (time/now)])
+          (when game-is-over? [:game-state (or 
+                                             (when game-is-won? 'won) 
+                                             (when game-is-lost? 'lost))])
+          (when game-is-won? [:points (-> 
+                                        (* (:width board) (:height board))
+                                        (* (:number-of-mines board))
+                                        (/ seconds)
+                                        (/ number-of-moves)
+                                        (* 1000)
+                                        (int))]))))
 
 (defn filter-board
+  "Returns a filtered board with only updated squares."
   [board]
   (dissoc (assoc board :squares (select-keys (:squares board) (:updated board)) :updated)))
 
 (defn game-over?
   "Checks if the game is over (returns 'lost or 'won) or still in progress (returns nil)."
-  [{:keys [board-state]}]
-  (some #{board-state} '(lost won)))
+  [{:keys [game-state]}]
+  (some #{game-state} '(lost won)))
 
 (defn merge-boards
   "Merges changes from new-partial-board into the original-board."
@@ -121,7 +136,7 @@
   (let [width (min width 26)
         height (min height 50)
         number-of-mines (min number-of-mines (int (/ (* width height) 4)))]
-    {:width width, :height height, :number-of-mines number-of-mines, :remaining number-of-mines, :start-time (time/now), :number-of-moves 0
+    {:width width, :height height, :number-of-mines number-of-mines, :number-of-moves 0, :remaining number-of-mines
      :squares (zipmap
                 (shuffle (board-coordinates width height))
                 (concat (repeat number-of-mines 'mine) (repeat 'sea)))}))

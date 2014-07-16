@@ -38,7 +38,7 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
                                    (:remaining board)
                                    (case (game-over? board)
                                      lost (ansi/style "\nSorry, you blew yourself to smithereens :(" :red :bright)
-                                     won (ansi/style "\nCONGRATS!!!" :green :bright)
+                                     won (ansi/style (str "\nCONGRATS!!! - " (:points board) " points") :green :bright)
                                      nil "")
                                    (reduce str (for [c (range-1 width)] 
                                                  (format "  %s " (number->string c))))
