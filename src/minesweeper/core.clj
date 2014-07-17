@@ -35,23 +35,26 @@
         game-is-won? (and (zero? number-of-wrongly-flagged-mines) (= number-of-flagges-mines (:number-of-mines board)))
         game-is-lost? (not (zero? (count (coordinates-with-state board 'exploded))))
         game-is-over? (or game-is-won? game-is-lost?)
-        seconds (time-in-seconds (:start-time board))
+        seconds (when-let [start-time (:start-time board)] (time-in-seconds start-time))
         number-of-moves (inc (:number-of-moves board))]
     (conj board
           [:number-of-moves number-of-moves]
           [:remaining (- (:number-of-mines board) (+ number-of-flagges-mines number-of-wrongly-flagged-mines))]
-          [:seconds seconds]
-          (when (= number-of-moves 1) [:start-time (time/now)])
-          (when game-is-over? [:game-state (or 
-                                             (when game-is-won? 'won) 
-                                             (when game-is-lost? 'lost))])
-          (when game-is-won? [:points (-> 
-                                        (* (:width board) (:height board))
-                                        (* (:number-of-mines board))
-                                        (/ seconds)
-                                        (/ number-of-moves)
-                                        (* 1000)
-                                        (int))]))))
+          [:seconds (or seconds 0)]
+          (when (= number-of-moves 1)
+            [:start-time (time/now)])
+          (when game-is-over?
+            [:game-state (or 
+                           (when game-is-won? 'won) 
+                           (when game-is-lost? 'lost))])
+          (when game-is-won?
+            [:points (-> 
+                       (* (:width board) (:height board))
+                       (* (:number-of-mines board))
+                       (/ seconds)
+                       (/ number-of-moves)
+                       (* 1000)
+                       (int))]))))
 
 (defn filter-board
   "Returns a filtered board with only updated squares."

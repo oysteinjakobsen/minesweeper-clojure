@@ -3,7 +3,8 @@
   (:require [speclj.core :refer :all]
             speclj.run.standard
             [minesweeper.core :refer :all]
-            [minesweeper.util :refer :all]))
+            [minesweeper.util :refer :all]
+            [clj-time.core :as time]))
 
 (with-redefs
   [time-in-seconds (fn [& _] 42)]
@@ -82,7 +83,7 @@
   
   (describe
     "updated-board-state"
-    (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 3, :seconds 12}) 
+    (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 3, :seconds 12, :start-time (time/now)}) 
     (with squares {:A1 'flagged-mine, :B1 'sea, :C1 'sea, :D1 'sea, :E1 'sea,
                    :A2 'sea, :B2 'sea, :C2 'sea, :D2 'sea, :E2 'sea,
                    :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
@@ -148,7 +149,7 @@
   
   (describe
     "do-move"
-    (with board {:width 5, :height 5, :number-of-mines 5, :number-of-moves 2, :seconds 12
+    (with board {:width 5, :height 5, :number-of-mines 5, :number-of-moves 2, :seconds 12, :start-time (time/now)
                  :squares {:A1 'flagged-mine, :B1 'wrongly-flagged-mine, :C1 'mine, :D1 'sea, :E1 'sea,
                            :A2 'mine, :B2 'sea, :C2 'mine, :D2 'questioned-sea, :E2 'sea,
                            :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
