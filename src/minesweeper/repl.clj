@@ -8,7 +8,9 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
             [clojure.string :as string]
             [clansi.core :as ansi]))
 
-(def colors {1 :blue, 2 :green, 3 :red, 4 :magenta})
+(def ^{:private true, :const true} colors
+  "Maps from number of mines to a color for displaying that number."
+  {1 :blue, 2 :green, 3 :red, 4 :magenta})
 
 (defn square-as-string
   "Returns the character that represents the given square on the board."
@@ -34,7 +36,7 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
         header-as-string (fn [width]
                            (format "\n%s (secs: %d, moves: %d, remaining: %d) %s\n\n   %s\n%s"
                                    "M I N E S W E E P E R"
-                                   (:seconds board)
+                                   (or (:seconds board) 0)
                                    (:number-of-moves board)
                                    (:remaining board)
                                    (case (game-over? board)

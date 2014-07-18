@@ -1,7 +1,7 @@
 (ns minesweeper.core
   "Minesweeper game core."
   (:require [minesweeper.util :refer :all])
-  (:require [clj-time.core :as time]))
+  (:require [clj-time.core :as joda]))
 
 (defn mine?
   "Returns true if given state is one that represents a mine, nil otherwise"
@@ -42,7 +42,7 @@
           [:remaining (- (:number-of-mines board) (+ number-of-flagges-mines number-of-wrongly-flagged-mines))]
           [:seconds (or seconds 0)]
           (when (= number-of-moves 1)
-            [:start-time (time/now)])
+            [:start-time (joda/now)])
           (when game-is-over?
             [:game-state (or 
                            (when game-is-won? 'won) 
@@ -107,7 +107,8 @@
 
 (declare new-board)
 
-(def ^{:private true, :const true} transitions 
+(def ^{:private true, :const true} transitions
+  "Maps from action (explore or flag) and a square state to a new square state or a function returning multiple new square states."
   {:explore {:mine 'exploded
              :flagged-mine 'exploded
              :sea explore-sea
@@ -119,18 +120,16 @@
           :questioned-sea 'sea
           :questioned-mine 'mine}})
 
-(def no-op (fn [& _] {}))
-
 (defn do-move
   "Executes the given move on the given square. Returns a complete and updated board."
   [board coordinate action]
   (if-not (valid-move? board coordinate)
     (let [board (new-board (:width board) (:height board) (:number-of-mines board))]
       (merge-boards board (do-move board coordinate action)))
-    (let [operation (or (get-in transitions [action (keyword (coordinate (:squares board)))]) no-op)
-          action-results (if (fn? operation) (operation board coordinate) {:squares {coordinate operation}})
-          updated-squares (keys (:squares action-results))
-          new-board (assoc (updated-board-state (merge-boards board action-results))
+    (let [operation (or (get-in transitions [action (keyword (coordinate (:squares board)))]) (fn [& _] {}))
+          operation-results (if (fn? operation) (operation board coordinate) {:squares {coordinate operation}})
+          updated-squares (keys (:squares operation-results))
+          new-board (assoc (updated-board-state (merge-boards board operation-results))
                            :updated updated-squares
                            :moves (conj (or (:moves board) []) [coordinate action]))]
       (if (game-over? new-board)
@@ -168,6 +167,5 @@
   (dissoc (assoc board 
                  :squares (partition-by #(second (coordinate->index (first %)))
                                         (map #(anonymize-square (restructure-square board %))
-                                             (board-coordinates (:width board) (:height board))))
-                 :seconds (time-in-seconds (:start-time board)))
+                                             (board-coordinates (:width board) (:height board)))))
           :start-time))

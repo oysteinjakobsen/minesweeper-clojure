@@ -234,7 +234,7 @@
   
   (describe
     "restructure-board"
-    (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2, 
+    (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2
                  :squares {:A1 'flagged-mine, :B1 'wrongly-flagged-mine, :C1 'mine, :D1 'sea, :E1 'sea,
                            :A2 'mine, :B2 'sea, :C2 'mine, :D2 'sea, :E2 'sea,
                            :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
@@ -244,7 +244,7 @@
                          :squares {:A1 'flagged-mine, :B1 'wrongly-flagged-mine, :C2 'flagged-mine}})
     (it
       "returns the board's squares as a list of row lists, each square containing state, mines, and coordinate"
-      (should= {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2, :seconds 42,
+      (should= {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2,
                 :squares '(([:A1 flagged 1] [:B1 flagged 4] [:C1 untouched 0] [:D1 untouched 0] [:E1 untouched 0])
                             ([:A2 untouched 0] [:B2 untouched 0] [:C2 untouched 0] [:D2 untouched 0] [:E2 untouched 0])
                             ([:A3 untouched 0] [:B3 untouched 0] [:C3 untouched 0] [:D3 untouched 0] [:E3 untouched 0])
@@ -259,7 +259,8 @@
       (should (mine? 'mine))
       (should (mine? 'flagged-mine))
       (should (mine? 'exploded))
-      (should (mine? 'disclosed-mine)))
+      (should (mine? 'disclosed-mine))
+      (should (mine? 'questioned-mine)))
     (it
       "otherwise returns false"
       (should-not (mine? 'sea))
