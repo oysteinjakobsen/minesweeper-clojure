@@ -154,7 +154,8 @@
                            :A2 'mine, :B2 'sea, :C2 'mine, :D2 'questioned-sea, :E2 'sea,
                            :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
                            :A4 'sea, :B4 'mine, :C4 'sea, :D4 'sea, :E4 'sea,
-                           :A5 'sea, :B5 'sea, :C5 'sea, :D5 'sea, :E5 'sea}})
+                           :A5 'sea, :B5 'sea, :C5 'sea, :D5 'sea, :E5 'sea}
+                 :moves [[:D2 :flag] [:D2 :flag] [:B1 :flag] [:A1 :flag]]})
     (with explored-coordinates #{:D1 :E1 :D2 :E2 :C3 :D3 :E3 :C4 :D4 :E4 :C5 :D5 :E5})
     (it
       "returns coordinates of updated (i.e. exlored) squares"
@@ -166,6 +167,10 @@
     (it
       "returns a board with :number-of-moves incremented"
       (should= 3 (:number-of-moves (do-move @board :E5 :explore))))
+    (it
+      "returns a list of moves with latest move appended"
+      (should= [[:D2 :flag] [:D2 :flag] [:B1 :flag] [:A1 :flag] [:E5 :explore]]
+               (:moves (do-move @board :E5 :explore))))
     (it
       "returns a board with one updated square with state 'flagged-mine if move is to flag a mine"
       (let [results (do-move @board :A2 :flag)]

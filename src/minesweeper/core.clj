@@ -57,9 +57,11 @@
                        (int))]))))
 
 (defn filter-board
-  "Returns a filtered board with only updated squares."
+  "Returns a filtered board with only updated squares and no move history or timestamp."
   [board]
-  (dissoc (assoc board :squares (select-keys (:squares board) (:updated board)) :updated)))
+  (dissoc 
+    (assoc board :squares (select-keys (:squares board) (:updated board)))
+    :updated :moves :start-time))
 
 (defn game-over?
   "Checks if the game is over (returns 'lost or 'won) or still in progress (returns nil)."
@@ -88,17 +90,6 @@
         new-board
         (recur new-board coordinates-to-explore)))))
 
-(def actions {:explore {:mine 'exploded
-                        :flagged-mine 'exploded
-                        :sea explore-sea
-                        :wrongly-flagged-mine explore-sea}
-              :flag {:mine 'flagged-mine
-                     :sea 'wrongly-flagged-mine
-                     :flagged-mine 'questioned-mine
-                     :wrongly-flagged-mine 'questioned-sea
-                     :questioned-sea 'sea
-                     :questioned-mine 'mine}})
-
 (defn valid-move?
   "A first move to a square with mine or adjacent mines is not valid. All other moves are valid."
   [board coordinate]
@@ -116,6 +107,18 @@
 
 (declare new-board)
 
+(def ^{:private true, :const true} transitions 
+  {:explore {:mine 'exploded
+             :flagged-mine 'exploded
+             :sea explore-sea
+             :wrongly-flagged-mine explore-sea}
+   :flag {:mine 'flagged-mine
+          :sea 'wrongly-flagged-mine
+          :flagged-mine 'questioned-mine
+          :wrongly-flagged-mine 'questioned-sea
+          :questioned-sea 'sea
+          :questioned-mine 'mine}})
+
 (def no-op (fn [& _] {}))
 
 (defn do-move
@@ -124,10 +127,12 @@
   (if-not (valid-move? board coordinate)
     (let [board (new-board (:width board) (:height board) (:number-of-mines board))]
       (merge-boards board (do-move board coordinate action)))
-    (let [action (or (get-in actions [action (keyword (coordinate (:squares board)))]) no-op)
-          action-results (if (fn? action) (action board coordinate) {:squares {coordinate action}})
+    (let [operation (or (get-in transitions [action (keyword (coordinate (:squares board)))]) no-op)
+          action-results (if (fn? operation) (operation board coordinate) {:squares {coordinate operation}})
           updated-squares (keys (:squares action-results))
-          new-board (assoc (updated-board-state (merge-boards board action-results)) :updated updated-squares)]
+          new-board (assoc (updated-board-state (merge-boards board action-results))
+                           :updated updated-squares
+                           :moves (conj (or (:moves board) []) [coordinate action]))]
       (if (game-over? new-board)
         (merge-boards new-board (disclosed-board new-board))
         new-board))))
