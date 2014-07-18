@@ -4,6 +4,7 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
   (:gen-class)
   (:require [minesweeper.core :refer :all]
             [minesweeper.util :refer :all]
+            [minesweeper.hof :refer :all]
             [clojure.string :as string]
             [clansi.core :as ansi]))
 
@@ -55,6 +56,16 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
                           (row-as-string %1 %2)
                           (line-as-string width)) (:squares board))))))
 
+(defn render-hall-of-fame
+  "Renders the hall of fame, i.e. list of best results for the given board size and number of mines."
+  [{:keys [width height number-of-mines]}]
+  (when *use-hof*
+    (println (str "\n* HALL OF FAME *\n"
+                  (reduce str (map 
+                                (fn [entry]
+                                  (format "%4d %s\n" (get entry "points") (get entry "nick")))
+                                (get-hall-of-fame width height number-of-mines)))))))
+
 (defn read-move-from-input
   "Reads a new move from the terminal. The (case insensitive) input is a coordinate (for example 'B3'), 
 optionally followed by an action, either \"F\" (flag a mine) or \"E\" (explore, which is default).
@@ -66,15 +77,27 @@ either :flag (a mine) or :explore (hopefully just sea)."
     (when-not (empty? coordinate)
       [(keyword coordinate) (get {"F" :flag, "E" :explore} (or action "E"))])))
 
+(defn read-nick-from-input
+  "Read player's nick from the terminal."
+  []
+  (when *use-hof*
+    (println "Enter your nick")
+    (string/trim (string/lower-case (read-line)))))
+  
 (defn play
   "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminal."
   [width height number-of-mines & options]
-  (binding [ansi/use-ansi (if (some #{'-c} options) true false)]
+  (binding [ansi/use-ansi (if (some #{'-c} options) true false)
+            *use-hof* (if (some #{'-hof} options) true false)]
     (loop [board (new-board width height number-of-mines)]
       (render-board (restructure-board board))
-      (when-not (game-over? board)
+      (if-not (game-over? board)
         (when-let [[coordinate action] (read-move-from-input)]
-          (recur (do-move board coordinate action)))))))
+          (recur (do-move board coordinate action)))
+        (when (= (game-over? board) 'won)
+          (when-let [nick (read-nick-from-input)]
+            (add-result! board nick))
+          (render-hall-of-fame board))))))
 
 (defn -main
   "Runs Minesweeper from the command line. Board width, height, and number of mines must be given as arguments."

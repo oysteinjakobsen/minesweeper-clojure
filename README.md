@@ -18,6 +18,7 @@ lein run 9 9 10
 ```
 
 Add **-c** if you're running in a terminal supporting ansi coloring.
+Add **-hof** if you have Neo4j running and wants to enable the Hall-of-Fame function.
 
 ## Tests
 
