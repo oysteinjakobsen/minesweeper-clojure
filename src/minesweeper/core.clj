@@ -29,17 +29,17 @@
 
 (defn updated-board-state
   "Updates the board with state, i.e. seconds passed, number of moves, remaining mines, game-state, and points."
-  [board]
+  [{:keys [width height number-of-mines number-of-moves start-time] :as board}]
   (let [number-of-flagges-mines (count (coordinates-with-state board 'flagged-mine))
         number-of-wrongly-flagged-mines (count (coordinates-with-state board 'wrongly-flagged-mine))
-        game-is-won? (and (zero? number-of-wrongly-flagged-mines) (= number-of-flagges-mines (:number-of-mines board)))
+        game-is-won? (and (zero? number-of-wrongly-flagged-mines) (= number-of-flagges-mines number-of-mines))
         game-is-lost? (not (zero? (count (coordinates-with-state board 'exploded))))
         game-is-over? (or game-is-won? game-is-lost?)
-        seconds (when-let [start-time (:start-time board)] (time-in-seconds start-time))
-        number-of-moves (inc (:number-of-moves board))]
+        seconds (when start-time (time-in-seconds start-time))
+        number-of-moves (inc number-of-moves)]
     (conj board
           [:number-of-moves number-of-moves]
-          [:remaining (- (:number-of-mines board) (+ number-of-flagges-mines number-of-wrongly-flagged-mines))]
+          [:remaining (- number-of-mines (+ number-of-flagges-mines number-of-wrongly-flagged-mines))]
           [:seconds (or seconds 0)]
           (when (= number-of-moves 1)
             [:start-time (joda/now)])
@@ -49,8 +49,8 @@
                            (when game-is-lost? 'lost))])
           (when game-is-won?
             [:points (-> 
-                       (* (:width board) (:height board))
-                       (* (:number-of-mines board))
+                       (* width height)
+                       (* number-of-mines)
                        (/ seconds)
                        (/ number-of-moves)
                        (* 1000)
@@ -58,9 +58,9 @@
 
 (defn filter-board
   "Returns a filtered board with only updated squares and no move history or timestamp."
-  [board]
+  [{:keys [squares updated] :as board}]
   (dissoc 
-    (assoc board :squares (select-keys (:squares board) (:updated board)))
+    (assoc board :squares (select-keys squares updated))
     :updated :moves :start-time))
 
 (defn game-over?
@@ -76,7 +76,7 @@
 
 (defn- explore-sea
   "Explores the given sea square and recursively explores adjacent squares. Board updates are returned."
-  [board coordinate]
+  [{:keys [width height] :as board} coordinate]
   (loop [new-board {:squares {}}
          coordinates-to-explore (list coordinate)]
     (let [coordinate (first coordinates-to-explore)
@@ -85,17 +85,17 @@
                                    (set (rest coordinates-to-explore))
                                    (when (zero? (number-of-adjacent-mines coordinate board))
                                      (filter #(nil? (% (:squares new-board)))
-                                             (adjacent-coordinates coordinate (:width board) (:height board)))))]
+                                             (adjacent-coordinates coordinate width height))))]
       (if (empty? coordinates-to-explore)
         new-board
         (recur new-board coordinates-to-explore)))))
 
 (defn valid-move?
   "A first move to a square with mine or adjacent mines is not valid. All other moves are valid."
-  [board coordinate]
-  (or (not (zero? (:number-of-moves board)))
+  [{:keys [number-of-moves squares] :as board} coordinate]
+  (or (not (zero? number-of-moves))
       (and (zero? (number-of-adjacent-mines coordinate board))
-           (not= (coordinate (:squares board)) 'mine))))
+           (not= (coordinate squares) 'mine))))
 
 (defn disclosed-board
   [board]
@@ -122,16 +122,16 @@
 
 (defn do-move
   "Executes the given move on the given square. Returns a complete and updated board."
-  [board coordinate action]
+  [{:keys [width height number-of-mines squares moves] :as board} coordinate action]
   (if-not (valid-move? board coordinate)
-    (let [board (new-board (:width board) (:height board) (:number-of-mines board))]
+    (let [board (new-board width height number-of-mines)]
       (merge-boards board (do-move board coordinate action)))
-    (let [operation (or (get-in transitions [action (keyword (coordinate (:squares board)))]) (fn [& _] {}))
+    (let [operation (or (get-in transitions [action (keyword (coordinate squares))]) (fn [& _] {}))
           operation-results (if (fn? operation) (operation board coordinate) {:squares {coordinate operation}})
           updated-squares (keys (:squares operation-results))
           new-board (assoc (updated-board-state (merge-boards board operation-results))
                            :updated updated-squares
-                           :moves (conj (or (:moves board) []) [coordinate action]))]
+                           :moves (conj (or moves []) [coordinate action]))]
       (if (game-over? new-board)
         (merge-boards new-board (disclosed-board new-board))
         new-board))))

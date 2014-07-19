@@ -26,22 +26,20 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
 
 (defn render-board
   "Prints an ascii representation of the given board on the terminal."
-  [board]
-  (let [width (:width board)
-        height (:height board)
-        line-as-string (fn [width]
+  [{:keys [width height seconds number-of-moves remaining points squares] :as board}]
+  (let [line-as-string (fn [width]
                          (format "   %s+\n" 
                                  (reduce str 
                                          (repeat width "+---"))))
         header-as-string (fn [width]
                            (format "\n%s (secs: %d, moves: %d, remaining: %d) %s\n\n   %s\n%s"
                                    "M I N E S W E E P E R"
-                                   (or (:seconds board) 0)
-                                   (:number-of-moves board)
-                                   (:remaining board)
+                                   (or seconds 0)
+                                   number-of-moves
+                                   remaining
                                    (case (game-over? board)
                                      lost (ansi/style "\nSorry, you blew yourself to smithereens :(" :red :bright)
-                                     won (ansi/style (str "\nCONGRATS!!! - " (:points board) " points") :green :bright)
+                                     won (ansi/style (str "\nCONGRATS!!! - " points " points") :green :bright)
                                      nil "")
                                    (reduce str (for [c (range-1 width)] 
                                                  (format "  %s " (number->string c))))
@@ -56,7 +54,7 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
                      (map-indexed
                        #(str
                           (row-as-string %1 %2)
-                          (line-as-string width)) (:squares board))))))
+                          (line-as-string width)) squares)))))
 
 (defn render-hall-of-fame
   "Renders the hall of fame, i.e. list of best results for the given board size and number of mines."
