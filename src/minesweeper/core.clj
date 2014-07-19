@@ -56,13 +56,6 @@
                        (* 1000)
                        (int))]))))
 
-(defn filter-board
-  "Returns a filtered board with only updated squares and no move history or timestamp."
-  [{:keys [squares updated] :as board}]
-  (dissoc 
-    (assoc board :squares (select-keys squares updated))
-    :updated :moves :start-time))
-
 (defn game-over?
   "Checks if the game is over (returns 'lost or 'won) or still in progress (returns nil)."
   [{:keys [game-state]}]
@@ -74,9 +67,9 @@
   (assoc (merge original-board new-partial-board)
          :squares (merge (:squares original-board) (:squares new-partial-board))))
 
-(defn- explore-sea
+(defn explore-sea
   "Explores the given sea square and recursively explores adjacent squares. Board updates are returned."
-  [{:keys [width height] :as board} coordinate]
+  [{:keys [width height squares] :as board} coordinate]
   (loop [new-board {:squares {}}
          coordinates-to-explore (list coordinate)]
     (let [coordinate (first coordinates-to-explore)
@@ -84,7 +77,9 @@
           coordinates-to-explore (into
                                    (set (rest coordinates-to-explore))
                                    (when (zero? (number-of-adjacent-mines coordinate board))
-                                     (filter #(nil? (% (:squares new-board)))
+                                     (filter (complement #(or 
+                                                            (contains? (:squares new-board) %)
+                                                            (= (% squares) 'explored-sea)))
                                              (adjacent-coordinates coordinate width height))))]
       (if (empty? coordinates-to-explore)
         new-board
@@ -148,24 +143,25 @@
                 (shuffle (board-coordinates width height))
                 (concat (repeat number-of-mines 'mine) (repeat 'sea)))}))
 
-(defn- anonymize-square
-  "Anonymizes the state so that the client don't see the mines."
-  [square]
-  (let [square (replace {'mine 'untouched, 'sea 'untouched, 'flagged-mine 'flagged, 'wrongly-flagged-mine 'flagged 'questioned-mine 'questioned 'questioned-sea 'questioned} square)]
-    (if (= (second square) 'untouched)
-      (assoc square 2 0)
-      square)))
+(defn- restructured-square
+  "Returns the given square as a map containing id (coordinate), anonymized state, and number of mines (if explored)."
+  [{:keys [squares] :as board} coordinate]
+  (let [state (coordinate squares)
+        anonymized-state (case (coordinate squares)
+                    (mine sea) 'untouched
+                    (flagged-mine, wrongly-flagged-mine) 'flagged
+                    (questioned-mine questioned-sea) 'questioned
+                           state)]
+    (conj {:id coordinate, :state anonymized-state}
+          (when (= anonymized-state 'explored-sea)
+            [:mines (number-of-adjacent-mines coordinate board)]))))
 
-(defn- restructure-square
-  "Returns the given square as a vector containing coordinate, state, and number-of-mines."
-  [board coordinate]
-  [coordinate (coordinate (:squares board)) (number-of-adjacent-mines coordinate board)])
-
-(defn restructure-board
-  "Restructures the board for viewing, organizing it row-by-row and including necessary information."
-  [board]
-  (dissoc (assoc board 
-                 :squares (partition-by #(second (coordinate->index (first %)))
-                                        (map #(anonymize-square (restructure-square board %))
-                                             (board-coordinates (:width board) (:height board)))))
-          :start-time))
+(defn restructured-board
+  "Restructures the board for viewing, organizing it row-by-row and including necessary (but anonymized) information."
+  [{:keys [width height updated] :as board} & [{:keys [updates-only?] :or {updates-only? false}}]]
+  (let [board-coordinates (board-coordinates width height)
+        coordinates (if updates-only? (filter #(some #{%} updated) board-coordinates) board-coordinates)]
+    (dissoc (assoc board 
+                   :squares (partition-by #(second (coordinate->index (:id %)))
+                                          (map #(restructured-square board %) coordinates)))
+            :start-time :moves :updated)))

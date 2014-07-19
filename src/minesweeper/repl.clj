@@ -14,7 +14,7 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
 
 (defn square-as-string
   "Returns the character that represents the given square on the board."
-  [[coordinate state mines]]
+  [{:keys [state mines]}]
   (case state
     untouched " "
     flagged "F"
@@ -90,7 +90,7 @@ either :flag (a mine) or :explore (hopefully just sea)."
   (binding [ansi/use-ansi (if (some #{'-c} options) true false)
             *use-hof* (if (some #{'-hof} options) true false)]
     (loop [board (new-board width height number-of-mines)]
-      (render-board (restructure-board board))
+      (render-board (restructured-board board))
       (if-not (game-over? board)
         (when-let [[coordinate action] (read-move-from-input)]
           (recur (do-move board coordinate action)))

@@ -233,24 +233,27 @@
         (should= 'explored-sea (get-in (do-move board :C2 :explore) [:squares :C2])))))
   
   (describe
-    "restructure-board"
-    (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2
+    "restructured-board"
+    (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2, :updated [:B1 :C2]
                  :squares {:A1 'flagged-mine, :B1 'wrongly-flagged-mine, :C1 'mine, :D1 'sea, :E1 'sea,
-                           :A2 'mine, :B2 'sea, :C2 'mine, :D2 'sea, :E2 'sea,
+                           :A2 'mine, :B2 'explored-sea, :C2 'mine, :D2 'sea, :E2 'sea,
                            :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
                            :A4 'sea, :B4 'mine, :C4 'sea, :D4 'sea, :E4 'sea,
-                           :A5 'sea, :B5 'sea, :C5 'sea, :D5 'sea, :E5 'sea}})
-    (with partial-board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2, 
-                         :squares {:A1 'flagged-mine, :B1 'wrongly-flagged-mine, :C2 'flagged-mine}})
+                           :A5 'sea, :B5 'explored-sea, :C5 'sea, :D5 'sea, :E5 'sea}})
     (it
-      "returns the board's squares as a list of row lists, each square containing state, mines, and coordinate"
+      "returns the board's squares as a list of row lists, each square a map containing id (coordinate), state and number of mines (if explored)"
       (should= {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2,
-                :squares '(([:A1 flagged 1] [:B1 flagged 4] [:C1 untouched 0] [:D1 untouched 0] [:E1 untouched 0])
-                            ([:A2 untouched 0] [:B2 untouched 0] [:C2 untouched 0] [:D2 untouched 0] [:E2 untouched 0])
-                            ([:A3 untouched 0] [:B3 untouched 0] [:C3 untouched 0] [:D3 untouched 0] [:E3 untouched 0])
-                            ([:A4 untouched 0] [:B4 untouched 0] [:C4 untouched 0] [:D4 untouched 0] [:E4 untouched 0])
-                            ([:A5 untouched 0] [:B5 untouched 0] [:C5 untouched 0] [:D5 untouched 0] [:E5 untouched 0]))}
-               (restructure-board @board))))
+                :squares '(({:id :A1 :state flagged} {:id :B1 :state flagged} {:id :C1 :state untouched} {:id :D1 :state untouched} {:id :E1 :state untouched})
+                            ({:id :A2 :state untouched} {:id :B2 :state explored-sea :mines 4} {:id :C2 :state untouched} {:id :D2 :state untouched} {:id :E2 :state untouched})
+                            ({:id :A3 :state untouched} {:id :B3 :state untouched} {:id :C3 :state untouched} {:id :D3 :state untouched} {:id :E3 :state untouched})
+                            ({:id :A4 :state untouched} {:id :B4 :state untouched} {:id :C4 :state untouched} {:id :D4 :state untouched} {:id :E4 :state untouched})
+                            ({:id :A5 :state untouched} {:id :B5 :state explored-sea :mines 1} {:id :C5 :state untouched} {:id :D5 :state untouched} {:id :E5 :state untouched}))}
+               (restructured-board @board)))
+    (it
+      "returns only updated squares if told so"
+      (should= {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2,
+                :squares '(({:id :B1 :state flagged}) ({:id :C2 :state untouched}))}
+               (restructured-board @board {:updates-only? true}))))
   
   (describe
     "mine?"
