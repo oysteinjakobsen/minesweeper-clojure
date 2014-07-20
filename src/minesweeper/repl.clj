@@ -16,13 +16,13 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
   "Returns the character that represents the given square on the board."
   [{:keys [state mines]}]
   (case state
-    untouched " "
-    flagged "F"
-    questioned "?"
-    explored-sea (if (zero? mines) "." (ansi/style (str mines) (get colors mines :default)))
-    disclosed-mine (ansi/style "M" :red :bright)
-    disclosed-wrongly-flagged-mine (ansi/style "X" :red :bright)
-    exploded (ansi/style "*" :red :bright)))
+    :untouched " "
+    :flagged "F"
+    :questioned "?"
+    :explored-sea (if (zero? mines) "." (ansi/style (str mines) (get colors mines :default)))
+    :disclosed-mine (ansi/style "M" :red :bright)
+    :disclosed-wrongly-flagged-mine (ansi/style "X" :red :bright)
+    :exploded (ansi/style "*" :red :bright)))
 
 (defn render-board
   "Prints an ascii representation of the given board on the terminal."
@@ -38,8 +38,8 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
                                    number-of-moves
                                    remaining
                                    (case (game-over? board)
-                                     lost (ansi/style "\nSorry, you blew yourself to smithereens :(" :red :bright)
-                                     won (ansi/style (str "\nCONGRATS!!! - " points " points") :green :bright)
+                                     :lost (ansi/style "\nSorry, you blew yourself to smithereens :(" :red :bright)
+                                     :won (ansi/style (str "\nCONGRATS!!! - " points " points") :green :bright)
                                      nil "")
                                    (reduce str (for [c (range-1 width)] 
                                                  (format "  %s " (number->string c))))
@@ -83,7 +83,7 @@ either :flag (a mine) or :explore (hopefully just sea)."
   (when *use-hof*
     (println "Enter your nick")
     (string/trim (string/lower-case (read-line)))))
-  
+
 (defn play
   "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminal."
   [width height number-of-mines & options]
@@ -94,7 +94,7 @@ either :flag (a mine) or :explore (hopefully just sea)."
       (if-not (game-over? board)
         (when-let [[coordinate action] (read-move-from-input)]
           (recur (do-move board coordinate action)))
-        (when (= (game-over? board) 'won)
+        (when (= (game-over? board) :won)
           (when-let [nick (read-nick-from-input)]
             (add-result! board nick))
           (render-hall-of-fame board))))))

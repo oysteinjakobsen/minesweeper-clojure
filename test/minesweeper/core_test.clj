@@ -12,11 +12,11 @@
   (describe
     "number-of-adjacent-mines"
     (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 0, 
-                 :squares {:A1 'mine, :B1 'sea, :C1 'mine, :D1 'sea, :E1 'sea,
-                           :A2 'mine, :B2 'sea, :C2 'mine, :D2 'sea, :E2 'sea,
-                           :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
-                           :A4 'sea, :B4 'mine, :C4 'sea, :D4 'sea, :E4 'sea,
-                           :A5 'sea, :B5 'sea, :C5 'sea, :D5 'sea, :E5 'sea}})
+                 :squares {:A1 :mine, :B1 :sea, :C1 :mine, :D1 :sea, :E1 :sea,
+                           :A2 :mine, :B2 :sea, :C2 :mine, :D2 :sea, :E2 :sea,
+                           :A3 :sea, :B3 :sea, :C3 :sea, :D3 :sea, :E3 :sea,
+                           :A4 :sea, :B4 :mine, :C4 :sea, :D4 :sea, :E4 :sea,
+                           :A5 :sea, :B5 :sea, :C5 :sea, :D5 :sea, :E5 :sea}})
     (it
       "returns the number of mines in neighbour squares"
       (should= 0 (number-of-adjacent-mines :D4 @board))
@@ -30,10 +30,10 @@
     "new-board"
     (it 
       "creates a new board with the correct number of mines"
-      (should= 13 (count (filter #(= % 'mine) (vals (:squares (new-board 7 9 13)))))))
+      (should= 13 (count (filter #(= % :mine) (vals (:squares (new-board 7 9 13)))))))
     (it
       "creates squares with sea unless there is a mine"
-      (should= (- (* 7 9) 13) (count (filter #(= % 'sea) (vals (:squares (new-board 7 9 13)))))))
+      (should= (- (* 7 9) 13) (count (filter #(= % :sea) (vals (:squares (new-board 7 9 13)))))))
     (it
       "stores the size and number of mines in the board"
       (let [board (new-board 7 9 13)]
@@ -62,11 +62,11 @@
   (describe
     "valid-move?"
     (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 0, 
-                 :squares {:A1 'mine, :B1 'sea, :C1 'sea, :D1 'sea, :E1 'sea,
-                           :A2 'sea, :B2 'sea, :C2 'sea, :D2 'sea, :E2 'sea,
-                           :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
-                           :A4 'sea, :B4 'sea, :C4 'sea, :D4 'mine, :E4 'sea,
-                           :A5 'sea, :B5 'sea, :C5 'sea, :D5 'sea, :E5 'sea}})
+                 :squares {:A1 :mine, :B1 :sea, :C1 :sea, :D1 :sea, :E1 :sea,
+                           :A2 :sea, :B2 :sea, :C2 :sea, :D2 :sea, :E2 :sea,
+                           :A3 :sea, :B3 :sea, :C3 :sea, :D3 :sea, :E3 :sea,
+                           :A4 :sea, :B4 :sea, :C4 :sea, :D4 :mine, :E4 :sea,
+                           :A5 :sea, :B5 :sea, :C5 :sea, :D5 :sea, :E5 :sea}})
     (it
       "returns true if this is not the first move"
       (let [board (assoc @board :number-of-moves 5)]
@@ -84,28 +84,28 @@
   (describe
     "updated-board-state"
     (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 3, :seconds 12, :start-time (time/now)}) 
-    (with squares {:A1 'flagged-mine, :B1 'sea, :C1 'sea, :D1 'sea, :E1 'sea,
-                   :A2 'sea, :B2 'sea, :C2 'sea, :D2 'sea, :E2 'sea,
-                   :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
-                   :A4 'sea, :B4 'sea, :C4 'sea, :D4 'mine, :E4 'sea,
-                   :A5 'sea, :B5 'sea, :C5 'sea, :D5 'sea, :E5 'sea})
+    (with squares {:A1 :flagged-mine, :B1 :sea, :C1 :sea, :D1 :sea, :E1 :sea,
+                   :A2 :sea, :B2 :sea, :C2 :sea, :D2 :sea, :E2 :sea,
+                   :A3 :sea, :B3 :sea, :C3 :sea, :D3 :sea, :E3 :sea,
+                   :A4 :sea, :B4 :sea, :C4 :sea, :D4 :mine, :E4 :sea,
+                   :A5 :sea, :B5 :sea, :C5 :sea, :D5 :sea, :E5 :sea})
     (it
-      "returns game-state 'lost if a mine has exploded"
-      (let [board (assoc @board, :squares (assoc @squares, :D4 'exploded))]
-        (should= 'lost (:game-state (updated-board-state board)))))
+      "returns game-state :lost if a mine has exploded"
+      (let [board (assoc @board, :squares (assoc @squares, :D4 :exploded))]
+        (should= :lost (:game-state (updated-board-state board)))))
     (it
-      "returns game-state 'won and calculates points if all mines are flagged and nothing else is flagged"
-      (let [board (assoc @board :squares (assoc @squares, :A1 'flagged-mine, :D4 'flagged-mine))
+      "returns game-state :won and calculates points if all mines are flagged and nothing else is flagged"
+      (let [board (assoc @board :squares (assoc @squares, :A1 :flagged-mine, :D4 :flagged-mine))
             results (updated-board-state board)]
-        (should= 'won (:game-state results))
+        (should= :won (:game-state results))
         (should= 297 (:points results))))
     (it
-      "returns no game-state if game is neither 'lost nor 'won"
+      "returns no game-state if game is neither :lost nor :won"
       (let [board (assoc @board, :squares @squares)]
         (should-not (:game-state (updated-board-state board)))))
     (it
       "returns remaining as number of mines minus number of flagged squares"
-      (let [board (assoc @board :squares (assoc @squares, :A5 'wrongly-flagged-mine, :D4 'flagged-mine))]
+      (let [board (assoc @board :squares (assoc @squares, :A5 :wrongly-flagged-mine, :D4 :flagged-mine))]
         (should= -1 (:remaining (updated-board-state board)))))
     (it
       "increments number-of-moves"
@@ -120,12 +120,12 @@
     "game-over?"
     (with board (new-board 4 4 5))
     (it
-      "returns true if the game-state is 'won"
-      (let [board (assoc @board, :game-state 'won)]
+      "returns true if the game-state is :won"
+      (let [board (assoc @board, :game-state :won)]
         (should (game-over? board))))
     (it
-      "returns true if the game-state is 'lost"
-      (let [board (assoc @board, :game-state 'lost)]
+      "returns true if the game-state is :lost"
+      (let [board (assoc @board, :game-state :lost)]
         (should (game-over? board))))
     (it
       "otherwise returns false"
@@ -134,15 +134,15 @@
   (describe
     "merge-boards"
     (with original-board {:width 5, :height 5, :number-of-moves 0, 
-                          :squares {:A1 'sea, :B1 'sea,
-                                    :A2 'sea, :B2 'mine,
-                                    :A3 'sea, :B3 'sea}})
-    (with new-partial-board {:number-of-moves 1, :game-state 'won,
-                             :squares {:A3 'mine, :B3 'flagged-mine}})
-    (with merged-board {:width 5, :height 5, :number-of-moves 1, :game-state 'won, 
-                        :squares {:A1 'sea, :B1 'sea,
-                                  :A2 'sea, :B2 'mine,
-                                  :A3 'mine, :B3 'flagged-mine}})
+                          :squares {:A1 :sea, :B1 :sea,
+                                    :A2 :sea, :B2 :mine,
+                                    :A3 :sea, :B3 :sea}})
+    (with new-partial-board {:number-of-moves 1, :game-state :won,
+                             :squares {:A3 :mine, :B3 :flagged-mine}})
+    (with merged-board {:width 5, :height 5, :number-of-moves 1, :game-state :won, 
+                        :squares {:A1 :sea, :B1 :sea,
+                                  :A2 :sea, :B2 :mine,
+                                  :A3 :mine, :B3 :flagged-mine}})
     (it
       "merges two boards, taking updated board and square values from the second"
       (should= @merged-board (merge-boards @original-board @new-partial-board))))
@@ -150,19 +150,19 @@
   (describe
     "do-move"
     (with board {:width 5, :height 5, :number-of-mines 5, :number-of-moves 2, :seconds 12, :start-time (time/now)
-                 :squares {:A1 'flagged-mine, :B1 'wrongly-flagged-mine, :C1 'mine, :D1 'sea, :E1 'sea,
-                           :A2 'mine, :B2 'sea, :C2 'mine, :D2 'questioned-sea, :E2 'sea,
-                           :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
-                           :A4 'sea, :B4 'mine, :C4 'sea, :D4 'sea, :E4 'sea,
-                           :A5 'sea, :B5 'sea, :C5 'sea, :D5 'sea, :E5 'sea}
+                 :squares {:A1 :flagged-mine, :B1 :wrongly-flagged-mine, :C1 :mine, :D1 :sea, :E1 :sea,
+                           :A2 :mine, :B2 :sea, :C2 :mine, :D2 :questioned-sea, :E2 :sea,
+                           :A3 :sea, :B3 :sea, :C3 :sea, :D3 :sea, :E3 :sea,
+                           :A4 :sea, :B4 :mine, :C4 :sea, :D4 :sea, :E4 :sea,
+                           :A5 :sea, :B5 :sea, :C5 :sea, :D5 :sea, :E5 :sea}
                  :moves [[:D2 :flag] [:D2 :flag] [:B1 :flag] [:A1 :flag]]})
-    (with explored-coordinates #{:D1 :E1 :D2 :E2 :C3 :D3 :E3 :C4 :D4 :E4 :C5 :D5 :E5})
+    (with explored-coordinates #{:D1 :E1 :E2 :C3 :D3 :E3 :C4 :D4 :E4 :C5 :D5 :E5})
     (it
       "returns coordinates of updated (i.e. exlored) squares"
       (should= @explored-coordinates (set (:updated (do-move @board :E5 :explore)))))
     (it
-      "returns state 'expored-sea in all explored squares"
-      (should= '(explored-sea) 
+      "returns state :expored-sea in all explored squares"
+      (should= '(:explored-sea) 
                (distinct (vals (select-keys (:squares (do-move @board :E5 :explore)) @explored-coordinates)))))
     (it
       "returns a board with :number-of-moves incremented"
@@ -172,99 +172,99 @@
       (should= [[:D2 :flag] [:D2 :flag] [:B1 :flag] [:A1 :flag] [:E5 :explore]]
                (:moves (do-move @board :E5 :explore))))
     (it
-      "returns a board with one updated square with state 'flagged-mine if move is to flag a mine"
+      "returns a board with one updated square with state :flagged-mine if move is to flag a mine"
       (let [results (do-move @board :A2 :flag)]
-        (should= 'flagged-mine (:A2 (:squares results)))
+        (should= :flagged-mine (:A2 (:squares results)))
         (should= '(:A2) (:updated results)))) 
     (it
-      "returns a board with one updated square with state 'questioned-mine if move is to flag an already flagged mine"
+      "returns a board with one updated square with state :questioned-mine if move is to flag an already flagged mine"
       (let [results (do-move @board :A1 :flag)]
-        (should= 'questioned-mine (:A1 (:squares results)))
+        (should= :questioned-mine (:A1 (:squares results)))
         (should= '(:A1) (:updated results)))) 
     (it
-      "returns a board with one updated square with state 'mine if move is to flag a questioned mine"
-      (let [board (assoc @board, :squares (assoc (:squares @board) :A1 'questioned-mine))
+      "returns a board with one updated square with state :mine if move is to flag a questioned mine"
+      (let [board (assoc @board, :squares (assoc (:squares @board) :A1 :questioned-mine))
             results (do-move board :A1 :flag)]
-        (should= 'mine (:A1 (:squares results)))
+        (should= :mine (:A1 (:squares results)))
         (should= '(:A1) (:updated results)))) 
     (it
-      "returns a board with one updated square with state 'questioned-sea if move is to flag an already wrongly flagged mine"
+      "returns a board with one updated square with state :questioned-sea if move is to flag an already wrongly flagged mine"
       (let [results (do-move @board :B1 :flag)]
-        (should= 'questioned-sea (:B1 (:squares results)))
+        (should= :questioned-sea (:B1 (:squares results)))
         (should= '(:B1) (:updated results)))) 
     (it
-      "returns a board with one updated square with state 'sea if move is to flag questioned sea"
-      (let [board (assoc @board, :squares (assoc (:squares @board) :B1 'questioned-sea))
+      "returns a board with one updated square with state :sea if move is to flag questioned sea"
+      (let [board (assoc @board, :squares (assoc (:squares @board) :B1 :questioned-sea))
             results (do-move board :B1 :flag)]
-        (should= 'sea (:B1 (:squares results)))
+        (should= :sea (:B1 (:squares results)))
         (should= '(:B1) (:updated results))))
     (it
       "keeps game in progress if last mine was flagged but there are still wrongly flagged mines left"
-      (let [board (assoc @board :squares, (assoc (:squares @board), :C1 'flagged-mine, :A2 'flagged-mine, :C2 'flagged-mine, :D2 'sea))
+      (let [board (assoc @board :squares, (assoc (:squares @board), :C1 :flagged-mine, :A2 :flagged-mine, :C2 :flagged-mine, :D2 :sea))
             results (do-move board :B4 :flag)]
-        (should= 'flagged-mine (:B4 (:squares results)))
+        (should= :flagged-mine (:B4 (:squares results)))
         (should-not (:game-state results))))
     (it
-      "returns a board with game state 'won if last mine was flagged and there are no wrongly flagged mines"
-      (let [board (assoc @board, :squares (assoc (:squares @board), :B1 'sea, :C1 'flagged-mine, :A2 'flagged-mine, :C2 'flagged-mine))
+      "returns a board with game state :won if last mine was flagged and there are no wrongly flagged mines"
+      (let [board (assoc @board, :squares (assoc (:squares @board), :B1 :sea, :C1 :flagged-mine, :A2 :flagged-mine, :C2 :flagged-mine))
             results (do-move board :B4 :flag)]
-        (should= 'flagged-mine (:B4 (:squares results)))
+        (should= :flagged-mine (:B4 (:squares results)))
         (should= #{:B4 :D2} (set (:updated results)))
-        (should= 'won (:game-state results))))
+        (should= :won (:game-state results))))
     (it
-      "returns a board with one updated square with state 'wrongly-flagged-mine if move is to flag sea as mine"
+      "returns a board with one updated square with state :wrongly-flagged-mine if move is to flag sea as mine"
       (let [results (do-move @board :C4 :flag)]
         (should= '(:C4) (:updated results))
-        (should= 'wrongly-flagged-mine (:C4 (:squares results)))))
+        (should= :wrongly-flagged-mine (:C4 (:squares results)))))
     (it
-      "returns a disclosed board with game state 'lost if move is to explore a mine"
+      "returns a disclosed board with game state :lost if move is to explore a mine"
       (let [results (do-move @board :A2 :explore)]
-        (should= 'lost (:game-state results))
-        (should= 'exploded (:A2 (:squares results)))
+        (should= :lost (:game-state results))
+        (should= :exploded (:A2 (:squares results)))
         (should= #{:B1 :C1 :A2 :C2 :D2 :B4} (set (:updated results)))
-        (should= {:B1 'disclosed-wrongly-flagged-mine, :C1 'disclosed-mine
-                  :A2 'exploded, :C2 'disclosed-mine, :D2 'sea
-                  :B4 'disclosed-mine}
+        (should= {:B1 :disclosed-wrongly-flagged-mine, :C1 :disclosed-mine
+                  :A2 :exploded, :C2 :disclosed-mine, :D2 :sea
+                  :B4 :disclosed-mine}
                  (select-keys (:squares results) [:B1 :C1 :A2 :C2 :D2 :B4]))))
     (it
       "creates a new board if first move is to explore a square with a mine or adjacent mines"
       (let [board (assoc @board :number-of-moves 0)]
-        (should= 'explored-sea (get-in (do-move board :D1 :explore) [:squares :D1]))
-        (should= 'explored-sea (get-in (do-move board :C2 :explore) [:squares :C2])))))
+        (should= :explored-sea (get-in (do-move board :D1 :explore) [:squares :D1]))
+        (should= :explored-sea (get-in (do-move board :C2 :explore) [:squares :C2])))))
   
   (describe
     "restructured-board"
     (with board {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2, :updated [:B1 :C2]
-                 :squares {:A1 'flagged-mine, :B1 'wrongly-flagged-mine, :C1 'mine, :D1 'sea, :E1 'sea,
-                           :A2 'mine, :B2 'explored-sea, :C2 'mine, :D2 'sea, :E2 'sea,
-                           :A3 'sea, :B3 'sea, :C3 'sea, :D3 'sea, :E3 'sea,
-                           :A4 'sea, :B4 'mine, :C4 'sea, :D4 'sea, :E4 'sea,
-                           :A5 'sea, :B5 'explored-sea, :C5 'sea, :D5 'sea, :E5 'sea}})
+                 :squares {:A1 :flagged-mine, :B1 :wrongly-flagged-mine, :C1 :mine, :D1 :sea, :E1 :sea,
+                           :A2 :mine, :B2 :explored-sea, :C2 :mine, :D2 :sea, :E2 :sea,
+                           :A3 :sea, :B3 :sea, :C3 :sea, :D3 :sea, :E3 :sea,
+                           :A4 :sea, :B4 :mine, :C4 :sea, :D4 :sea, :E4 :sea,
+                           :A5 :sea, :B5 :explored-sea, :C5 :sea, :D5 :sea, :E5 :sea}})
     (it
       "returns the board's squares as a list of row lists, each square a map containing id (coordinate), state and number of mines (if explored)"
       (should= {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2,
-                :squares '(({:id :A1 :state flagged} {:id :B1 :state flagged} {:id :C1 :state untouched} {:id :D1 :state untouched} {:id :E1 :state untouched})
-                            ({:id :A2 :state untouched} {:id :B2 :state explored-sea :mines 4} {:id :C2 :state untouched} {:id :D2 :state untouched} {:id :E2 :state untouched})
-                            ({:id :A3 :state untouched} {:id :B3 :state untouched} {:id :C3 :state untouched} {:id :D3 :state untouched} {:id :E3 :state untouched})
-                            ({:id :A4 :state untouched} {:id :B4 :state untouched} {:id :C4 :state untouched} {:id :D4 :state untouched} {:id :E4 :state untouched})
-                            ({:id :A5 :state untouched} {:id :B5 :state explored-sea :mines 1} {:id :C5 :state untouched} {:id :D5 :state untouched} {:id :E5 :state untouched}))}
+                :squares '(({:id :A1 :state :flagged} {:id :B1 :state :flagged} {:id :C1 :state :untouched} {:id :D1 :state :untouched} {:id :E1 :state :untouched})
+                            ({:id :A2 :state :untouched} {:id :B2 :state :explored-sea :mines 4} {:id :C2 :state :untouched} {:id :D2 :state :untouched} {:id :E2 :state :untouched})
+                            ({:id :A3 :state :untouched} {:id :B3 :state :untouched} {:id :C3 :state :untouched} {:id :D3 :state :untouched} {:id :E3 :state :untouched})
+                            ({:id :A4 :state :untouched} {:id :B4 :state :untouched} {:id :C4 :state :untouched} {:id :D4 :state :untouched} {:id :E4 :state :untouched})
+                            ({:id :A5 :state :untouched} {:id :B5 :state :explored-sea :mines 1} {:id :C5 :state :untouched} {:id :D5 :state :untouched} {:id :E5 :state :untouched}))}
                (restructured-board @board)))
     (it
       "returns only updated squares if told so"
       (should= {:width 5, :height 5, :number-of-mines 2, :number-of-moves 2,
-                :squares '(({:id :B1 :state flagged}) ({:id :C2 :state untouched}))}
+                :squares '(({:id :B1 :state :flagged}) ({:id :C2 :state :untouched}))}
                (restructured-board @board {:updates-only? true}))))
   
   (describe
     "mine?"
     (it
       "returns true if a given square state represents a mine"
-      (should (mine? 'mine))
-      (should (mine? 'flagged-mine))
-      (should (mine? 'exploded))
-      (should (mine? 'disclosed-mine))
-      (should (mine? 'questioned-mine)))
+      (should (mine? :mine))
+      (should (mine? :flagged-mine))
+      (should (mine? :exploded))
+      (should (mine? :disclosed-mine))
+      (should (mine? :questioned-mine)))
     (it
       "otherwise returns false"
-      (should-not (mine? 'sea))
-      (should-not (mine? 'wrongly-flagged-mine)))))
+      (should-not (mine? :sea))
+      (should-not (mine? :wrongly-flagged-mine)))))
