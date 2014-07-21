@@ -56,9 +56,15 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
                           (row-as-string %1 %2)
                           (line-as-string width)) squares)))))
 
+(defn add-result-and-render-rank
+  "Adds the game result to the Hall-of-Fame and prints the game's rank."
+  [board nick]
+  (let [rank (get (add-result! board nick) "rank")]
+    (println "\nYour game ranks as number" rank)))
+
 (defn render-hall-of-fame
   "Renders the hall of fame, i.e. list of best results for the given board size and number of mines."
-  [{:keys [width height number-of-mines]}]
+  [{:keys [width height number-of-mines]} & [rank]]
   (when *use-hof*
     (println (str "\n* HALL OF FAME *\n"
                   (reduce str (map 
@@ -82,7 +88,8 @@ either :flag (a mine) or :explore (hopefully just sea)."
   []
   (when *use-hof*
     (println "Enter your nick")
-    (string/trim (string/lower-case (read-line)))))
+    (let [nick (string/trim (string/lower-case (read-line)))]
+       (when (not (empty? nick)) nick))))
 
 (defn play
   "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminal."
@@ -96,7 +103,7 @@ either :flag (a mine) or :explore (hopefully just sea)."
           (recur (do-move board coordinate action)))
         (when (= (game-over? board) :won)
           (when-let [nick (read-nick-from-input)]
-            (add-result! board nick))
+            (add-result-and-render-rank board nick))
           (render-hall-of-fame board))))))
 
 (defn -main
