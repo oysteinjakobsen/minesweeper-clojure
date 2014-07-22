@@ -4,13 +4,13 @@
             [clojurewerkz.neocons.rest.cypher :as cypher]
             [clj-time.format :as f]))
 
-(def ^:dynamic *use-hof*
-  "Rebind this to false if you don't have Neo4j running or don't want the hall-of-fame-functionality."
-  true)
+(def use-hof
+  "Reset this to false if you don't have Neo4j running or don't want the hall-of-fame-functionality."
+  (atom true))
 
-(def ^:dynamic *connection-string* 
-  "Rebind this if your Neo4j instance runs on another server or port."
-  "http://localhost:7474/db/data/")
+(def connection-string 
+  "Reset this if your Neo4j instance runs on another server or port."
+  (atom "http://localhost:7474/db/data/"))
 
 (def ^{:private true, :const true} cypher-get-hall-of-fame
   "MATCH (g:Game)-[:HAS_LEVEL]->(l:Level {width: {w}, height: {h}, `number-of-mines`: {n}})
@@ -36,8 +36,8 @@
 (defn- execute-cypher-table-query
   "Executes the given query and returns the result as a table (list of maps)."
   [cypher bindings]
-  (when *use-hof*
-    (let [conn (rest/connect *connection-string*)]
+  (when @use-hof
+    (let [conn (rest/connect @connection-string)]
       (cypher/tquery conn cypher bindings))))
   
 (defn get-hall-of-fame

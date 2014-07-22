@@ -115,9 +115,7 @@
 (def ^{:private true, :const true} transitions
   "Maps from action (explore or flag) and a square state to a new square state or a function returning multiple new square states."
   {:explore {:mine :exploded
-             :flagged-mine :exploded
-             :sea explore-sea
-             :wrongly-flagged-mine explore-sea}
+             :sea explore-sea}
    :flag {:mine :flagged-mine
           :sea :wrongly-flagged-mine
           :flagged-mine :questioned-mine
