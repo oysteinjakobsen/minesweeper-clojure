@@ -33,24 +33,24 @@
   [board]
   (str (assoc board :start-time (f/unparse (f/formatters :date-time-no-ms) (:start-time board)))))
 
+(defn- execute-cypher-table-query
+  "Executes the given query and returns the result as a table (list of maps)."
+  [cypher bindings]
+  (when *use-hof*
+    (let [conn (rest/connect *connection-string*)]
+      (cypher/tquery conn cypher bindings))))
+  
 (defn get-hall-of-fame
   "Returns list of N best results for board of given size and number of mines."
   [width height number-of-mines & [limit]]
-  (when *use-hof*
-    (let [conn (rest/connect *connection-string*)]
-      (cypher/tquery 
-        conn
-        cypher-get-hall-of-fame 
-        {:w width, :h height, :n number-of-mines, :limit (or limit 10)}))))
+  (execute-cypher-table-query 
+    cypher-get-hall-of-fame 
+    {:w width, :h height, :n number-of-mines, :limit (or limit 10)}))
 
 (defn add-result!
   "Adds a game result. Player and level are added if not already stored. Game id and rank is returned."
   [{:keys [points width height number-of-mines] :as board} nick]
-  (when *use-hof*
-    (let [conn (rest/connect *connection-string*)
-          board (format-board-for-storage board)]
-      (first
-        (cypher/tquery
-          conn
-          cypher-add-result
-          {:nick nick, :board board, :points points, :w width, :h height, :n number-of-mines})))))
+  (first
+    (execute-cypher-table-query
+      cypher-add-result
+      {:nick nick, :board (format-board-for-storage board), :points points, :w width, :h height, :n number-of-mines})))
