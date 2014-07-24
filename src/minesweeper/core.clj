@@ -100,17 +100,29 @@
                    [:questioned-sea :sea]
                    [:questioned-mine :disclosed-mine]]))
 
+(defn- generate-squares
+  "Generates a map of squares with mines randomly distributed. If a coordinates is passed then
+ that and all adjacent squares will be free of mines."
+  [width height number-of-mines coordinate]
+  (let [coords-without-mines (when coordinate 
+                               (conj (adjacent-coordinates coordinate width height) coordinate))
+        coords (group-by
+                 #(if (some #{%} coords-without-mines) :without :with)
+                 (board-coordinates width height))]
+    (zipmap
+      (into (shuffle (:with coords)) (:without coords))
+      (concat (repeat number-of-mines :mine) (repeat :sea)))))
+
 (defn new-board
   "Creates a new board with given size and number of mines. Size is limited to 26 x 50,
- and maximum 25% of the squares will have mines."
-  [width height number-of-mines]
+ and maximum 25% of the squares will have mines. If a coordinate is passed
+ then that and all adjacent squares will be free of mines."
+  [width height number-of-mines & [coordinate]]
   (let [width (min width 26)
         height (min height 50)
         number-of-mines (min number-of-mines (int (/ (* width height) 4)))]
     {:width width, :height height, :number-of-mines number-of-mines, :number-of-moves 0, :remaining number-of-mines
-     :squares (zipmap
-                (shuffle (board-coordinates width height))
-                (concat (repeat number-of-mines :mine) (repeat :sea)))}))
+     :squares (generate-squares width height number-of-mines coordinate)}))
 
 (def ^{:private true, :const true} transitions
   "Maps from action (explore or flag) and a square state to a new square state or a function returning multiple new square states."
@@ -127,7 +139,7 @@
   "Executes the given move on the given square. Returns a complete and updated board."
   [{:keys [width height number-of-mines squares moves] :as board} coordinate action]
   (if-not (valid-move? board coordinate)
-    (let [board (new-board width height number-of-mines)]
+    (let [board (new-board width height number-of-mines coordinate)]
       (merge-boards board (do-move board coordinate action)))
     (let [operation (or (get-in transitions [action (coordinate squares)]) (fn [& _] {}))
           operation-results (if (fn? operation) (operation board coordinate) {:squares {coordinate operation}})

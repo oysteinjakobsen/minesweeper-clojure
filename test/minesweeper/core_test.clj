@@ -57,7 +57,14 @@
         (should (> 49 (count (partition-by (fn [s] s) (map #(% board) coordinates)))))))
     (it
       "returns a different board each time called"
-      (should= 100 (count (distinct (repeatedly 100 #(:squares (new-board 7 9 13))))))))
+      (should= 100 (count (distinct (repeatedly 100 #(:squares (new-board 7 9 13)))))))
+    (it
+      "does not place mines at the given coordinate or on adjacent squares"
+      (let [coords-without-mines (conj (adjacent-coordinates :D2 7 9) :D2)]
+        (should= [:sea] (distinct (flatten 
+                                    (repeatedly 
+                                      100 
+                                      #(vals (select-keys (:squares (new-board 7 9 100 :D2)) coords-without-mines)))))))))
   
   (describe
     "valid-move?"
