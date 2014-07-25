@@ -12,11 +12,16 @@
   "Reset this if your Neo4j instance runs on another server or port."
   (atom "http://localhost:7474/db/data/"))
 
-(def ^{:private true, :const true} cypher-get-hall-of-fame
+(def ^{:private true, :const true} cypher-hall-of-fame
   "MATCH (g:Game)-[:HAS_LEVEL]->(l:Level {width: {w}, height: {h}, `number-of-mines`: {n}})
    WITH g ORDER BY g.points DESC LIMIT {limit}
    MATCH (p:Player)-[:PLAYED]->(g)
-   RETURN ID(g) as id, g.points AS points, p.nick AS nick")
+   RETURN ID(g) AS id, g.points AS points, p.nick AS nick")
+
+(def ^{:private true, :const true} cypher-player-ranking
+  "MATCH (l:Level {width: {w}, height: {h}, `number-of-mines`: {n}})
+   MATCH (p:Player)-[:PLAYED]->(g:Game)-[:HAS_LEVEL]->(l)
+   RETURN p.nick AS nick, MAX(g.points) AS points ORDER BY points DESC LIMIT {limit}")
 
 (def ^{:private true, :const true} cypher-add-result
   "CREATE (g:Game {points: {points}, board: {board}})
@@ -44,7 +49,14 @@
   "Returns list of N best results for board of given size and number of mines."
   [width height number-of-mines & [limit]]
   (execute-cypher-table-query 
-    cypher-get-hall-of-fame 
+    cypher-hall-of-fame 
+    {:w width, :h height, :n number-of-mines, :limit (or limit 10)}))
+  
+(defn get-player-ranking
+  "Returns list of N best players for board of given size and number of mines."
+  [width height number-of-mines & [limit]]
+  (execute-cypher-table-query 
+    cypher-player-ranking
     {:w width, :h height, :n number-of-mines, :limit (or limit 10)}))
 
 (defn add-result!
