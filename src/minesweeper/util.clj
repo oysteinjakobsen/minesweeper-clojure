@@ -19,6 +19,11 @@
   [(string->number (subs (name coordinate) 0 1))
    (read-string (subs (name coordinate) 1))])
 
+(defn coordinate->row-index
+  "Convenience function that returns the row index of the given coordinate. For example :B3 yields 3."
+  [coordinate]
+  (second (coordinate->index coordinate)))
+
 (defn index->coordinate
   "Converts the given vector of indices to a coordinate, for example [2 3] to :B3."
   [[column row]]
@@ -53,6 +58,6 @@ but with a lower limit of 1 and an upper limit of S."
     (index->coordinate [col row])))
 
 (defn time-in-seconds
-  "Returns the number of seconds passed since the given start time."
+  "Returns a decimal number of seconds passed since the given start time."
   [start-time]
-  (joda/in-seconds (joda/interval start-time (joda/now))))
+  (float (/ (joda/in-millis (joda/interval start-time (joda/now))) 1000)))

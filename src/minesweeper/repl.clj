@@ -33,9 +33,9 @@ beautiful Clojure code then look elsewhere: Dive into core and util instead :)"
                                  (reduce str 
                                          (repeat width "+---"))))
         header-as-string (fn [width]
-                           (format "\n%s (secs: %d, moves: %d, remaining: %d) %s\n\n   %s\n%s"
+                           (format "\n%s\nSecs: %.1f - Moves: %d - Remaining: %d %s\n\n   %s\n%s"
                                    "M I N E S W E E P E R"
-                                   (or seconds 0)
+                                   (or seconds 0.0)
                                    number-of-moves
                                    remaining
                                    (case (game-over? board)
@@ -94,9 +94,10 @@ either :flag (a mine) or :explore (hopefully just sea)."
 
 (defn play
   "Starts a new game with given board size and number of mines. The board is drawn on and input taken from terminal."
-  [width height number-of-mines options]
-  (reset! use-hof (:use-hof options))
-  (reset! connection-string (:neo4j-url options))
+  [width height number-of-mines & [options]]
+  (when options
+    (reset! use-hof (:use-hof options))
+    (reset! connection-string (:neo4j-url options)))
   (binding [ansi/use-ansi (:use-coloring options)]
     (loop [board (new-board width height number-of-mines)]
       (render-board (restructured-board board))

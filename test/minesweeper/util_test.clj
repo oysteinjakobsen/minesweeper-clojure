@@ -26,6 +26,12 @@
     (should= :Z1 (index->coordinate [26 1]))))
 
 (describe
+  "coordinate->row-index"
+  (it
+    "should return the row index of the given coordinate"
+    (should= 17 (coordinate->row-index :D17))))
+
+(describe
   "range-1"
   (it
     "returns a range with base 1"

@@ -39,6 +39,14 @@
       (let [board (new-board 7 9 13)]
         (should= [7 9 13] [(:width board) (:height board) (:number-of-mines board)])))
     (it
+      "creates a board with a minimum width of 5"
+      (let [board (new-board 2 20 1)]
+        (should= 5 (:width board))))
+    (it
+      "creates a board with a minimum height of 5"
+      (let [board (new-board 20 2 1)]
+        (should= 5 (:height board))))
+    (it
       "limits the board width to 26"
       (let [board (new-board 7000 9 13)]
         (should= 26 (:width board))))
