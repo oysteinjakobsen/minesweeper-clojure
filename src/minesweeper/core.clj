@@ -147,9 +147,10 @@
     (let [operation (get-in transitions [action (coordinate squares)] (fn [& _] {}))
           operation-results (if (fn? operation) (operation board coordinate) {:squares {coordinate operation}})
           updated-squares (keys (:squares operation-results))
-          board-updates (assoc (updated-board-state (merge-boards board operation-results))
+          board-updates (updated-board-state (merge-boards board operation-results))
+          board-updates (assoc board-updates
                                :updated updated-squares
-                               :moves (conj (or moves []) [coordinate action]))]
+                               :moves (conj (or moves []) [coordinate action (:seconds board-updates)]))]
       (if (game-over? board-updates)
         (merge-boards board-updates (disclosed-board board-updates))
         board-updates))))

@@ -7,7 +7,7 @@
             [clj-time.core :as time]))
 
 (with-redefs
-  [time-in-seconds (fn [& _] 42)]
+  [time-in-seconds (fn [& _] 42.1)]
   
   (describe
     "number-of-adjacent-mines"
@@ -113,7 +113,7 @@
       (let [board (assoc @board :squares (assoc @squares, :A1 :flagged-mine, :D4 :flagged-mine))
             results (updated-board-state board)]
         (should= :won (:game-state results))
-        (should= 297 (:points results))))
+        (should= 296 (:points results))))
     (it
       "returns no game-state if game is neither :lost nor :won"
       (let [board (assoc @board, :squares @squares)]
@@ -129,7 +129,7 @@
     (it
       "returns seconds passed since the start of the game"
       (let [board (assoc @board, :squares @squares)]
-        (should= 42 (:seconds (updated-board-state board))))))
+        (should= 42.1 (:seconds (updated-board-state board))))))
   
   (describe
     "game-over?"
@@ -170,7 +170,7 @@
                            :A3 :sea, :B3 :sea, :C3 :sea, :D3 :sea, :E3 :sea,
                            :A4 :sea, :B4 :mine, :C4 :sea, :D4 :sea, :E4 :sea,
                            :A5 :sea, :B5 :sea, :C5 :sea, :D5 :sea, :E5 :sea}
-                 :moves [[:D2 :flag] [:D2 :flag] [:B1 :flag] [:A1 :flag]]})
+                 :moves [[:D2 :flag 0.0] [:D2 :flag 1.2] [:B1 :flag 4.7] [:A1 :flag 5.3]]})
     (with explored-coordinates #{:D1 :E1 :E2 :C3 :D3 :E3 :C4 :D4 :E4 :C5 :D5 :E5})
     (it
       "returns coordinates of updated (i.e. exlored) squares"
@@ -184,7 +184,7 @@
       (should= 3 (:number-of-moves (do-move @board :E5 :explore))))
     (it
       "returns a list of moves with latest move appended"
-      (should= [[:D2 :flag] [:D2 :flag] [:B1 :flag] [:A1 :flag] [:E5 :explore]]
+      (should= [[:D2 :flag 0.0] [:D2 :flag 1.2] [:B1 :flag 4.7] [:A1 :flag 5.3] [:E5 :explore 42.1]]
                (:moves (do-move @board :E5 :explore))))
     (it
       "returns a board with one updated square with state :flagged-mine if move is to flag a mine"

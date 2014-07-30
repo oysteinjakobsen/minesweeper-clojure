@@ -1,5 +1,5 @@
 (ns minesweeper.hof
-  "Minesweeper Hall of Fame. Uses Neo4j for storage."
+  "Minesweeper Hall of Fame. Uses Neo4j for storage. Also includes a simple message posting function."
   (:require [clojurewerkz.neocons.rest :as rest]
             [clojurewerkz.neocons.rest.cypher :as cypher]
             [clj-time.format :as f]))
@@ -32,6 +32,24 @@
    OPTIONAL MATCH (gg:Game)-[:HAS_LEVEL]->(l)
    WHERE gg.points > g.points
    RETURN ID(g) as id, COUNT(gg)+1 as rank")
+
+(def ^{:private true, :const true} cypher-get-game
+  "MATCH (g:Game) WHERE ID(g) = {id}
+   WITH g
+   MATCH (p:Player)-[:PLAYED]->(g)
+   RETURN g.board AS board, p.nick AS nick")
+
+(def ^{:private true, :const true} cypher-write-post
+  "CREATE (post:Post {time: timestamp(), text: {text}})
+   MERGE (player:Player {nick: {nick}})
+   MERGE (player)-[:POSTED]->(post)
+   RETURN ID(post) AS id")
+
+(def ^{:private true, :const true} cypher-get-posts
+  "MATCH (post:Post)
+   WITH post ORDER BY post.time DESC SKIP {skip} LIMIT {limit}
+   MATCH (player:Player)-[:POSTED]->(post)
+   RETURN player.nick, post.time, post.text")
 
 (defn- format-board-for-storage
   "Returns a string representation of the board suitable for storage in the database."
@@ -66,3 +84,28 @@
     (execute-cypher-table-query
       cypher-add-result
       {:nick nick, :board (format-board-for-storage board), :points points, :w width, :h height, :n number-of-mines})))
+
+(defn get-game
+  "Returns the game board with the given id."
+  [id]
+  (first
+    (execute-cypher-table-query 
+      cypher-get-game
+      {:id id})))
+
+(defn write-post!
+  "Adds a new posting. Player is added if not already stored. Posting id is returned."
+  [nick text]
+  (first
+    (execute-cypher-table-query
+      cypher-write-post
+      {:nick nick, :text text})))
+  
+(defn get-posts
+  "Returns a page of posts."
+  [& [page-number page-size]]
+  (let [limit (or page-size 10)
+        skip (* limit (dec (or page-number 1)))]
+    (execute-cypher-table-query 
+      cypher-get-posts
+      {:skip skip, :limit limit})))
