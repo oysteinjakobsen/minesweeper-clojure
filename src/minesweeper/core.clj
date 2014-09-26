@@ -6,7 +6,7 @@
 (defn mine?
   "Returns true if given state is one that represents a mine, nil otherwise"
   [state]
-  (some #(= state %) [:mine :flagged-mine :disclosed-mine :exploded :questioned-mine]))
+  (some (partial = state) [:mine :flagged-mine :disclosed-mine :exploded :questioned-mine]))
 
 (defn number-of-adjacent-mines
   "Returns the number of adjacent mines on the given board for a given coordinate."
@@ -178,5 +178,5 @@
                       board-coordinates)]
     (dissoc (assoc board
                    :squares (partition-by #(coordinate->row-index (:id %))
-                                          (map #(restructured-square board %) coordinates)))
+                                          (map (partial restructured-square board) coordinates)))
             :start-time :moves :updated)))

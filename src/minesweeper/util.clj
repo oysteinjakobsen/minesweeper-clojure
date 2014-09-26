@@ -45,7 +45,7 @@ but with a lower limit of 1 and an upper limit of S."
   "Given a coordinate this function returns a list of adjacent coordinates; 3, 5 or 8 in number."
   [coordinate width height]
   (let [[column row] (coordinate->index coordinate)]
-    (filter #(not= coordinate %)
+    (filter (partial not= coordinate)
             (for [r (adjacent-range row height)
                   c (adjacent-range column width)]
               (index->coordinate [c r])))))
